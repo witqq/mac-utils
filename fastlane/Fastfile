@@ -5,6 +5,10 @@ default_platform(:mac)
 opt_out_usage
 
 APP_IDENTIFIER = "com.witqq.mac-utils"
+PROJECT_ROOT = File.expand_path("..", __dir__)
+APP_STORE_METADATA_PATH = File.join(PROJECT_ROOT, "AppStore", "metadata")
+APP_STORE_RATING_PATH = File.join(PROJECT_ROOT, "AppStore", "age-rating.json")
+APP_REVIEW_NOTES = File.read(File.join(PROJECT_ROOT, "AppStore", "review-notes.md"), encoding: "UTF-8")
 
 platform :mac do
   desc "Synchronize App Store metadata or submit an uploaded build for review"
@@ -31,7 +35,7 @@ platform :mac do
       app_version: ENV.fetch("RELEASE_VERSION"),
       build_number: ENV.fetch("RELEASE_BUILD"),
       platform: "osx",
-      metadata_path: "AppStore/metadata",
+      metadata_path: APP_STORE_METADATA_PATH,
       screenshots_path: ENV.fetch("APP_STORE_SCREENSHOTS_PATH"),
       skip_binary_upload: true,
       force: true,
@@ -41,13 +45,13 @@ platform :mac do
       phased_release: false,
       primary_category: "Utilities",
       secondary_category: "Productivity",
-      app_rating_config_path: "AppStore/age-rating.json",
+      app_rating_config_path: APP_STORE_RATING_PATH,
       app_review_information: {
         first_name: "Mikhail",
         last_name: "Belyi",
         phone_number: "+79082767503",
         email_address: "belyiwork@mail.ru",
-        notes: File.read("AppStore/review-notes.md", encoding: "UTF-8")
+        notes: APP_REVIEW_NOTES
       },
       submission_information: {
         export_compliance_uses_encryption: false,
