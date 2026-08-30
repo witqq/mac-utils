@@ -26,19 +26,32 @@ jobs:
     environment: github-release
     permissions:
       contents: write
+    defaults:
+      run:
+        working-directory: source
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      MAC_UTILS_REPO_ROOT: ${{ github.workspace }}/source
       APPLE_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64 }}
       APPLE_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_PASSWORD }}
       APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
     steps:
+      - name: Check out trusted release automation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          path: automation
+          persist-credentials: false
+
       - name: Check out the immutable tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ env.RELEASE_TAG }}
+          path: source
+          persist-credentials: false
 
       - name: Select Xcode 26.3
         run: sudo xcode-select --switch /Applications/Xcode_26.3.app
@@ -50,19 +63,19 @@ jobs:
         run: |
           git fetch origin main --no-tags
           git merge-base --is-ancestor HEAD origin/main
-          version="$(./scripts/verify-release-version.sh "$RELEASE_TAG")"
+          version="$("$GITHUB_WORKSPACE/automation/scripts/verify-release-version.sh" "$RELEASE_TAG")"
           build="$(ruby -e 'text = File.read("project.yml"); match = text.match(/^\s*CURRENT_PROJECT_VERSION:\s*"([^"]+)"\s*$/); abort "CURRENT_PROJECT_VERSION not found" unless match; puts match[1]')"
           printf 'RELEASE_VERSION=%s\n' "$version" >> "$GITHUB_ENV"
           printf 'RELEASE_BUILD=%s\n' "$build" >> "$GITHUB_ENV"
 
       - name: Prepare protected signing credentials
         run: |
-          ./scripts/install-apple-certificate.sh
-          ./scripts/write-app-store-connect-key.sh
+          "$GITHUB_WORKSPACE/automation/scripts/install-apple-certificate.sh"
+          "$GITHUB_WORKSPACE/automation/scripts/write-app-store-connect-key.sh"
 
       - name: Create a clean signed Direct archive
         run: |
-          ./scripts/generate-xcode-project.sh
+          "$GITHUB_WORKSPACE/automation/scripts/generate-xcode-project.sh"
           output_root="$RUNNER_TEMP/mac-utils-release-$RELEASE_VERSION"
           archive_path="$output_root/MacUtils-Direct.xcarchive"
           export_path="$output_root/export"
@@ -77,11 +90,14 @@ jobs:
             -allowProvisioningUpdates \
             -authenticationKeyPath "$APP_STORE_CONNECT_KEY_PATH" \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM=4U4284E89E
           xcodebuild -exportArchive \
             -archivePath "$archive_path" \
             -exportPath "$export_path" \
-            -exportOptionsPlist Config/ExportOptions/Direct.plist \
+            -exportOptionsPlist "$GITHUB_WORKSPACE/automation/Config/ExportOptions/Direct.plist" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$APP_STORE_CONNECT_KEY_PATH" \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
@@ -99,8 +115,8 @@ jobs:
       - name: Build, notarize, and verify the DMG
         run: |
           dmg_path="$RELEASE_OUTPUT_ROOT/Mac-Utils-$RELEASE_TAG.dmg"
-          ./scripts/create-dmg.sh "$RELEASE_APP_PATH" "$dmg_path" "Developer ID Application"
-          ./scripts/notarize-dmg.sh "$dmg_path" \
+          "$GITHUB_WORKSPACE/automation/scripts/create-dmg.sh" "$RELEASE_APP_PATH" "$dmg_path" "Developer ID Application"
+          "$GITHUB_WORKSPACE/automation/scripts/notarize-dmg.sh" "$dmg_path" \
             --key "$APP_STORE_CONNECT_KEY_PATH" \
             --key-id "$APP_STORE_CONNECT_KEY_ID" \
             --issuer "$APP_STORE_CONNECT_ISSUER_ID"

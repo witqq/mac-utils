@@ -36,5 +36,4 @@ security list-keychains -d user -s "$keychain_path"
 rm -f "$certificate_path"
 
 print "MAC_UTILS_KEYCHAIN_PATH=$keychain_path" >> "$github_env"
-print "MAC_UTILS_KEYCHAIN_PASSWORD=$keychain_password" >> "$github_env"
 print "Imported the signing identity into an ephemeral CI keychain."

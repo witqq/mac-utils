@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-repo_root="${0:A:h:h}"
+repo_root="${MAC_UTILS_REPO_ROOT:-${0:A:h:h}}"
 tag="${1:-}"
 if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   print -u2 "Release tag must match vMAJOR.MINOR.PATCH; received: $tag"

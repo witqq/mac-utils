@@ -8,7 +8,7 @@ Mac Utils uses three GitHub Actions workflows. [CI](../.github/workflows/ci.yml)
 
 GitHub environment secrets are the only credentials read by release jobs. Do not create repository-level copies and never store the decoded files in an artifact, cache, log, commit, or shell history.
 
-The `github-release` environment permits only tags matching `v*` and contains:
+The `github-release` environment permits tags matching `v*` plus protected `main` for manual reruns and contains:
 
 - `DEVELOPER_ID_APPLICATION_P12_BASE64`: base64 of the exported Developer ID Application identity and private key;
 - `DEVELOPER_ID_APPLICATION_P12_PASSWORD`: the export password;
@@ -51,7 +51,7 @@ git push origin v1.0.0
 
 The release workflow rejects malformed or mismatched versions. It creates a clean universal Direct archive, signs the app and DMG, submits the DMG to Apple notarization, staples and verifies the ticket, calculates SHA-256, and creates GitHub-generated release notes. It publishes `Mac-Utils-v1.0.0.dmg` plus `Mac-Utils-v1.0.0.dmg.sha256`, downloads both back from GitHub, verifies the checksum/signature/ticket/image, and copies the app through the DMG’s `/Applications` layout.
 
-Rerunning the same workflow is safe: open **Actions → GitHub Release → Run workflow** on `main` and enter the existing tag. The workflow checks out that immutable tag, targets its existing release, replaces only the two versioned assets with newly verified outputs, and does not create a second release. Never move or force-update a published tag. If source changes are required, publish a new patch version.
+Rerunning the same workflow is safe: open **Actions → GitHub Release → Run workflow** on `main` and enter the existing tag. The workflow takes release automation from protected `main`, but checks out and compiles product sources from that immutable tag after verifying that the tagged commit belongs to `main`. It targets the existing release, replaces only the two versioned assets with newly verified outputs, and does not create a second release. Never move or force-update a published tag. If source changes are required, publish a new patch version.
 
 ## Validate or upload the App Store build
 

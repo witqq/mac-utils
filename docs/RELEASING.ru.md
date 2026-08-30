@@ -8,7 +8,7 @@ Mac Utils использует три GitHub Actions workflow. [CI](../.github/w
 
 Релизные jobs читают credentials только из GitHub Environment Secrets. Не создавайте их копии на уровне репозитория и никогда не сохраняйте расшифрованные файлы в artifact, cache, log, commit или shell history.
 
-Environment `github-release` разрешает только теги `v*` и содержит:
+Environment `github-release` разрешает теги `v*` и защищённую `main` для ручных повторных запусков и содержит:
 
 - `DEVELOPER_ID_APPLICATION_P12_BASE64` — base64 экспортированной identity Developer ID Application с закрытым ключом;
 - `DEVELOPER_ID_APPLICATION_P12_PASSWORD` — пароль экспорта;
@@ -51,7 +51,7 @@ git push origin v1.0.0
 
 Release workflow отклоняет неверный или несовпадающий номер версии. Он создаёт чистый universal Direct archive, подписывает приложение и DMG, отправляет DMG на notarization Apple, прикрепляет и проверяет ticket, рассчитывает SHA-256 и формирует release notes средствами GitHub. Затем он публикует `Mac-Utils-v1.0.0.dmg` и `Mac-Utils-v1.0.0.dmg.sha256`, скачивает оба файла из GitHub, проверяет checksum, подпись, ticket и образ и копирует приложение через DMG-раскладку с `/Applications`.
 
-Повторный запуск безопасен: откройте **Actions → GitHub Release → Run workflow** на `main` и укажите существующий тег. Workflow получит именно этот неизменяемый тег, заменит в его release только два версифицированных и заново проверенных asset и не создаст второй release. Никогда не переносите и не переписывайте опубликованный тег. Изменение исходников требует новой patch-версии.
+Повторный запуск безопасен: откройте **Actions → GitHub Release → Run workflow** на `main` и укажите существующий тег. Workflow возьмёт release automation из защищённой `main`, но получит и скомпилирует product source из неизменяемого тега, предварительно проверив принадлежность tagged commit ветке `main`. Он заменит в существующем release только два версифицированных и заново проверенных asset и не создаст второй release. Никогда не переносите и не переписывайте опубликованный тег. Изменение исходников требует новой patch-версии.
 
 ## Проверка или загрузка App Store build
 
