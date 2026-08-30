@@ -9,6 +9,9 @@ Toggle by State reads the current display mode every time. One branch can extend
 Run from anywhere
 Assign a global keyboard shortcut to any saved script. A script can contain one action or a sequence of actions, and an existing shortcut remains active if a replacement cannot be registered.
 
+Ready when you sign in
+Optionally launch Mac Utils at login. The General settings screen shows the live macOS approval state and links directly to Login Items when action is required.
+
 Display actions
 • Make a connected display the main display
 • Extend a connected display

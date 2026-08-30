@@ -27,13 +27,14 @@ struct SettingsView: View {
         VStack(spacing: 12) {
             HStack {
                 Picker("", selection: $selectedTab) {
+                    Label(text("tab.general"), systemImage: "gearshape").tag(SettingsTab.general)
                     Label(text("tab.scripts"), systemImage: "square.stack.3d.up").tag(SettingsTab.scripts)
                     Label(text("tab.shortcuts"), systemImage: "command").tag(SettingsTab.shortcuts)
                     Label(text("tab.help"), systemImage: "questionmark.circle").tag(SettingsTab.help)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 430)
+                .frame(width: 560)
                 .accessibilityIdentifier("settings-navigation")
                 Spacer()
                 Picker(text("language.picker"), selection: languageBinding) {
@@ -49,6 +50,8 @@ struct SettingsView: View {
 
             Group {
                 switch selectedTab {
+                case .general:
+                GeneralSettingsView(model: model)
                 case .scripts:
                 ScriptSettingsView(model: model)
                 case .shortcuts:
@@ -85,9 +88,104 @@ struct SettingsView: View {
 }
 
 enum SettingsTab: String, Hashable {
+    case general
     case scripts
     case shortcuts
     case help
+}
+
+private struct GeneralSettingsView: View {
+    @ObservedObject var model: AppModel
+    private var text: AppText { model.text }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text(text("general.title")).font(.largeTitle.bold())
+                Text(text("general.description")).font(.title3).foregroundStyle(.secondary)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Toggle(text("general.loginItem.title"), isOn: loginItemBinding)
+                        .toggleStyle(.switch)
+                        .help(text("general.loginItem.help"))
+                        .accessibilityIdentifier("launch-at-login-toggle")
+                    Text(text("general.loginItem.description"))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Label(statusText, systemImage: statusSymbol)
+                        .foregroundStyle(statusColor)
+                        .accessibilityIdentifier("launch-at-login-status")
+
+                    if model.loginItemStatus == .requiresApproval {
+                        Text(text("general.loginItem.approval"))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    HStack {
+                        Button(text("general.loginItem.openSettings")) {
+                            model.openLoginItemsSettings()
+                        }
+                        .help(text("general.loginItem.openSettings.help"))
+                        .accessibilityIdentifier("open-login-items-settings")
+                        Button(text("general.loginItem.refresh")) {
+                            model.refreshLoginItemStatus()
+                        }
+                        .help(text("general.loginItem.refresh.help"))
+                    }
+                }
+                .padding(20)
+                .background(.quaternary.opacity(0.28), in: RoundedRectangle(cornerRadius: 12))
+
+                if let error = model.errorMessage {
+                    Text(error).font(.caption).foregroundStyle(.red).textSelection(.enabled)
+                } else if let notice = model.noticeMessage {
+                    Text(notice).font(.caption).foregroundStyle(.green)
+                }
+            }
+            .frame(maxWidth: 760, alignment: .leading)
+            .padding(30)
+        }
+        .accessibilityIdentifier("general-settings")
+        .onAppear { model.refreshLoginItemStatus() }
+    }
+
+    private var loginItemBinding: Binding<Bool> {
+        Binding(
+            get: {
+                model.loginItemStatus == .enabled || model.loginItemStatus == .requiresApproval
+            },
+            set: { model.setLaunchAtLoginEnabled($0) }
+        )
+    }
+
+    private var statusText: String {
+        switch model.loginItemStatus {
+        case .notRegistered: text("general.loginItem.status.disabled")
+        case .enabled: text("general.loginItem.status.enabled")
+        case .requiresApproval: text("general.loginItem.status.requiresApproval")
+        case .notFound: text("general.loginItem.status.notFound")
+        }
+    }
+
+    private var statusSymbol: String {
+        switch model.loginItemStatus {
+        case .notRegistered: "circle"
+        case .enabled: "checkmark.circle.fill"
+        case .requiresApproval: "exclamationmark.triangle.fill"
+        case .notFound: "xmark.circle.fill"
+        }
+    }
+
+    private var statusColor: Color {
+        switch model.loginItemStatus {
+        case .notRegistered: .secondary
+        case .enabled: .green
+        case .requiresApproval: .orange
+        case .notFound: .red
+        }
+    }
 }
 
 private enum ScriptEditorMode: CaseIterable, Identifiable {

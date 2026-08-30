@@ -24,6 +24,12 @@ Mac Utils has no Dock icon. Find the overlapping-displays icon in the menu bar.
 3. Read the onboarding cards or open the **Help** tab.
 4. Choose **Language → System**, **English**, or **Русский**. The choice applies only to Mac Utils unless **System** is selected.
 
+## Launch at login
+
+Open **Settings… → General** and turn on **Launch Mac Utils at login**. Mac Utils uses the public macOS Login Items service and changes this setting only when you use the switch.
+
+The status shown below the switch is read from macOS. If approval is required, select **Open Login Items…**, allow Mac Utils in **System Settings → General → Login Items & Extensions**, return to Mac Utils, and select **Refresh Status**. Turning the switch off unregisters the app; it does not quit the current process.
+
 ## Display terms
 
 - **Main display** contains the menu bar and establishes the origin of the desktop layout.
@@ -103,5 +109,6 @@ Do not edit the file while Mac Utils is running. If JSON or schema validation fa
 - **A shortcut is unavailable:** record a different combination. The existing shortcut remains active during a failed edit.
 - **A script does not validate:** read the localized line and column message, or switch to the visual builder after correcting the DSL.
 - **The UI does not appear in the Dock:** this is expected; Mac Utils is a menu bar accessory application.
+- **Launch at login needs approval:** use the button in **Settings… → General** to open Login Items, allow Mac Utils, then refresh the displayed status.
 
 See [Known limitations](KNOWN-LIMITATIONS.md) and [Support](SUPPORT.md) for confirmed constraints and reporting instructions.

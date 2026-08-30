@@ -1,1 +1,1 @@
-Initial release with visual display workflows, state-based mirror/extend toggles, editable global shortcuts, and built-in English and Russian guidance.
+Adds optional launch at login, live macOS approval status, and a direct link to Login Items in System Settings. Automatic launch changes only when you use the new General setting.

@@ -29,6 +29,7 @@ The Mac App Store product remains marked as pending until Apple publication comp
 - Assigns one native global keyboard shortcut to an entire script.
 - Safely edits shortcuts: a conflicting or unavailable replacement leaves the previous shortcut active.
 - Stores configuration locally and supports English, Russian, or the system language.
+- Optionally launches at login through the macOS Login Items service, with visible system approval status.
 
 Mac Utils scripts can call only actions registered by the application. They cannot execute shell commands or arbitrary downloaded code.
 
@@ -66,11 +67,13 @@ The same key now extends a mirrored display and mirrors it again when it is exte
 - [Support](docs/SUPPORT.md)
 - [Security policy](SECURITY.md)
 - [Known limitations](docs/KNOWN-LIMITATIONS.md)
+- [Magic Trackpad switching feasibility](docs/MAGIC_TRACKPAD_FEASIBILITY.md)
 - [Contributing](CONTRIBUTING.md)
 - [Release operations](docs/RELEASING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Changelog](CHANGELOG.md)
 - [v1.0.0 release notes](docs/releases/v1.0.0.md)
+- [Prepared v1.1.0 release notes](docs/releases/v1.1.0.md)
 
 ## Development
 
@@ -90,7 +93,7 @@ XcodeGen 2.46.0 or later is required for project generation. Local archive comma
 Core modules:
 
 - `MacUtilsCore` defines actions, typed parameters, scenarios, state providers, and the safe DSL.
-- `MacUtilsSystem` implements CoreGraphics display control, native Carbon hotkeys, and atomic configuration storage.
+- `MacUtilsSystem` implements CoreGraphics display control, native Carbon hotkeys, the Service Management login-item adapter, and atomic configuration storage.
 - `MacUtilsApp` composes the registries and presents the menu bar and settings UI.
 
 See [Architecture](docs/ARCHITECTURE.md) before changing module boundaries.

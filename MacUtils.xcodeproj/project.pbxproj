@@ -17,6 +17,7 @@
 		1E425A51FCA55912C5573F7D /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6643E3A9840CCCBBC09A676D /* AppModelTests.swift */; };
 		1E43791FE3B370C5B79190B3 /* libMacUtilsSystem.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC4309FFCAB8DACE9B99814 /* libMacUtilsSystem.a */; };
 		20268A500E46DA6E88528F10 /* Scenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BE000683CFE9A3A236FDAA /* Scenario.swift */; };
+		20F04FE7D1F23F4F1EA937E6 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F2E515D0CAD5794772E3F3 /* LoginItemManager.swift */; };
 		233EEA9EB96C0DD7238ECB4C /* ScreenshotDisplayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882AA7538AEF00B0372B47B9 /* ScreenshotDisplayManager.swift */; };
 		2A9E84316A5313C8F0B1ED95 /* ActionRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15468A9A8DFD476588E35DD6 /* ActionRegistry.swift */; };
 		35778266DC9A91F8833876E8 /* libMacUtilsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B03B9D9E27EBC422F2DECDD6 /* libMacUtilsCore.a */; };
@@ -29,6 +30,7 @@
 		51E1A3FA4920E33B7A0012C8 /* DisplayControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB091440AED3ED6B3FD69ED2 /* DisplayControllerTests.swift */; };
 		57BE80B4366073ED301EC892 /* KeyboardShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ED1D5620465ACF99B03E063 /* KeyboardShortcut.swift */; };
 		5D73F80EDBCB5F0A5FA33232 /* ScenarioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19411A2833B887350A092673 /* ScenarioTests.swift */; };
+		5E6CF80427B40803B289195D /* LoginItemManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B8717682DFC5542E00E1DE /* LoginItemManagerTests.swift */; };
 		67A428553FD7E148EDA8D991 /* DisplayStateProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBA8C62F0BA10F71BD41DD9 /* DisplayStateProviderTests.swift */; };
 		6E21C9EECF8EFC4D92A31DB8 /* ActionSequenceBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF068278B725A1572667738 /* ActionSequenceBuilderTests.swift */; };
 		71853FD17C450CC4E4F273F2 /* DisplayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4A0F13A26CEB393DA10FD0 /* DisplayController.swift */; };
@@ -137,6 +139,7 @@
 		30183844EDA84F2AE8C8ACE9 /* MacUtilsAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacUtilsAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		32A02421F0203AF08EEDF289 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 		356859FE90AF8751AE652F8D /* ActionExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionExecutorTests.swift; sourceTree = "<group>"; };
+		38B8717682DFC5542E00E1DE /* LoginItemManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManagerTests.swift; sourceTree = "<group>"; };
 		4BB10EA062631471BC9B2F91 /* MacUtilsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacUtilsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		55E9983CE5B0B9172C62A5C4 /* ActionScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionScript.swift; sourceTree = "<group>"; };
 		631E91C47FA7D9111F608E89 /* ActionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionExecutor.swift; sourceTree = "<group>"; };
@@ -158,6 +161,7 @@
 		B0958EFCCDCF9946EABE937B /* UtilityAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UtilityAction.swift; sourceTree = "<group>"; };
 		B0FAD8D8FC08EDC0E283B484 /* DisplayManagement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayManagement.swift; sourceTree = "<group>"; };
 		B42DE0753DE7A94E7D06B4BE /* ParameterSchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParameterSchema.swift; sourceTree = "<group>"; };
+		B6F2E515D0CAD5794772E3F3 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
 		B7F79A24632BCA840F6EF986 /* AppLocalization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLocalization.swift; sourceTree = "<group>"; };
 		BB091440AED3ED6B3FD69ED2 /* DisplayControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayControllerTests.swift; sourceTree = "<group>"; };
 		BB4A0F13A26CEB393DA10FD0 /* DisplayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayController.swift; sourceTree = "<group>"; };
@@ -255,6 +259,7 @@
 				BB4A0F13A26CEB393DA10FD0 /* DisplayController.swift */,
 				864D9A9369D3252B0860FA6C /* DisplayStateProviders.swift */,
 				1538ADEAE91784C0D28F736A /* GlobalHotKeyRegistrar.swift */,
+				B6F2E515D0CAD5794772E3F3 /* LoginItemManager.swift */,
 				D86AF5436DB78016830182ED /* ShortcutCoordinator.swift */,
 				C12F082ED2C10C9D06DB1577 /* SystemEnvironment.swift */,
 			);
@@ -314,6 +319,7 @@
 				F619E77137BB9F81EAB1BCAD /* DisplayActionIntegrationTests.swift */,
 				BB091440AED3ED6B3FD69ED2 /* DisplayControllerTests.swift */,
 				AFBA8C62F0BA10F71BD41DD9 /* DisplayStateProviderTests.swift */,
+				38B8717682DFC5542E00E1DE /* LoginItemManagerTests.swift */,
 				0CCB8FA534CD1CDC21531A12 /* ShortcutCoordinatorTests.swift */,
 				1BEE5BD81179FB437253CCFE /* SystemEnvironmentTests.swift */,
 			);
@@ -575,6 +581,7 @@
 				389BF0CA13D13AE710DB74A9 /* DisplayActionIntegrationTests.swift in Sources */,
 				51E1A3FA4920E33B7A0012C8 /* DisplayControllerTests.swift in Sources */,
 				67A428553FD7E148EDA8D991 /* DisplayStateProviderTests.swift in Sources */,
+				5E6CF80427B40803B289195D /* LoginItemManagerTests.swift in Sources */,
 				856A6C5AECC6073CA61493FA /* ShortcutCoordinatorTests.swift in Sources */,
 				C1C9A3E5EDE03570E54928E0 /* SystemEnvironmentTests.swift in Sources */,
 			);
@@ -620,6 +627,7 @@
 				71853FD17C450CC4E4F273F2 /* DisplayController.swift in Sources */,
 				FD3D35978D41A65DC7FB8C93 /* DisplayStateProviders.swift in Sources */,
 				099BD1FE601BD981BDA8BF08 /* GlobalHotKeyRegistrar.swift in Sources */,
+				20F04FE7D1F23F4F1EA937E6 /* LoginItemManager.swift in Sources */,
 				124F1279CD62FCCC25639CE6 /* ShortcutCoordinator.swift in Sources */,
 				48272D64B6C715C748CB74A4 /* SystemEnvironment.swift in Sources */,
 			);
@@ -794,7 +802,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -810,7 +818,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -929,7 +937,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -945,7 +953,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1034,7 +1042,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1055,7 +1063,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

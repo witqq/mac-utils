@@ -18,6 +18,7 @@ flowchart LR
     DisplayState --> Controller
     Controller --> CoreGraphics[CoreGraphics driver]
     Model --> Store[ConfigurationStore]
+    Model --> Login[SMAppService login item adapter]
 ```
 
 ## Modules
@@ -46,6 +47,7 @@ An action is resolved only through `ActionRegistry`. A state toggle is resolved 
 - `CarbonHotKeyRegistrar` uses native global hotkey registration;
 - `ShortcutCoordinator` connects registered hotkeys to saved scenarios;
 - `ConfigurationStore` validates and atomically replaces local JSON.
+- `SystemLoginItemManager` maps the public `SMAppService.mainApp` registration states and operations to an injected app-facing contract.
 
 No SwiftUI view calls these drivers directly.
 
@@ -68,6 +70,7 @@ No SwiftUI view calls these drivers directly.
 - A shortcut replacement registers the candidate before releasing the prior registration.
 - A failed persistence operation restores the observable model and runtime registration; a failed rollback is surfaced explicitly.
 - Stored objects that cannot activate remain visible and editable rather than being dropped from the next save.
+- Launch-at-login is never enabled during startup. The UI reads the system status and changes registration only after an explicit user action.
 
 ## Display configuration
 

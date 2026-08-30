@@ -138,7 +138,7 @@ end
 
 %w[en ru].each do |locale|
   screenshots = Dir[File.join(ROOT, "Assets", "Screenshots", "app-store", locale, "*.png")].sort
-  errors << "#{locale} requires 1–10 App Store screenshots; found #{screenshots.length}" unless (1..10).cover?(screenshots.length)
+  errors << "#{locale} requires exactly 5 App Store screenshots; found #{screenshots.length}" unless screenshots.length == 5
   screenshots.each do |path|
     width = image_property(path, "pixelWidth").to_i
     height = image_property(path, "pixelHeight").to_i
@@ -159,7 +159,7 @@ expected_marketing.each do |path, dimensions|
 end
 
 if errors.empty?
-  puts "Release assets valid: 2 metadata locales, 7 AppIcon PNGs, 2 menu icons, 8 App Store screenshots, 3 marketing images."
+  puts "Release assets valid: 2 metadata locales, 7 AppIcon PNGs, 2 menu icons, 10 App Store screenshots, 3 marketing images."
 else
   warn errors.join("\n")
   exit 1

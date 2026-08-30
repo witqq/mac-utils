@@ -15,6 +15,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var isStarting = true
     @Published private(set) var displayRefreshCount = 0
     @Published private(set) var language: AppLanguage
+    @Published private(set) var loginItemStatus: LoginItemStatus
 
     private let displayManager: any DisplayManaging
     private let registry: ActionRegistry
@@ -23,6 +24,7 @@ final class AppModel: ObservableObject {
     private let scriptEngine: ScenarioScriptEngine
     private let shortcutCoordinator: ShortcutCoordinator
     private let configurationStore: ConfigurationStore
+    private let loginItemManager: any LoginItemManaging
     private let userDefaults: UserDefaults
     private var displayChangeSubscription: AnyCancellable?
 
@@ -32,6 +34,7 @@ final class AppModel: ObservableObject {
         stateProviders: StateProviderRegistry,
         shortcutCoordinator: ShortcutCoordinator,
         configurationStore: ConfigurationStore,
+        loginItemManager: any LoginItemManaging = SystemLoginItemManager(),
         userDefaults: UserDefaults = .standard,
         initialLanguage: AppLanguage? = nil
     ) {
@@ -42,6 +45,8 @@ final class AppModel: ObservableObject {
         scriptEngine = ScenarioScriptEngine(actions: registry, stateProviders: stateProviders)
         self.shortcutCoordinator = shortcutCoordinator
         self.configurationStore = configurationStore
+        self.loginItemManager = loginItemManager
+        loginItemStatus = loginItemManager.status
         self.userDefaults = userDefaults
         language = initialLanguage ?? userDefaults.string(forKey: AppLanguage.defaultsKey)
             .flatMap(AppLanguage.init(rawValue:)) ?? .system
@@ -57,6 +62,7 @@ final class AppModel: ObservableObject {
     func start() async {
         isStarting = true
         defer { isStarting = false }
+        refreshLoginItemStatus()
         let loaded = await configurationStore.load()
         var startupErrors: [String] = []
         if let error = loaded.recoveryError {
@@ -248,6 +254,10 @@ final class AppModel: ObservableObject {
     }
 
     func assign(_ shortcut: GlobalShortcut, to scriptID: UUID) async {
+        if let conflict = bindings.first(where: { $0.shortcut == shortcut }) {
+            show(error: ShortcutCoordinatorError.shortcutConflict(existingBindingID: conflict.id))
+            return
+        }
         let binding = ShortcutBinding(shortcut: shortcut, scriptID: scriptID)
         do {
             try await shortcutCoordinator.register(binding)
@@ -274,6 +284,10 @@ final class AppModel: ObservableObject {
         }
         let previous = bindings[index]
         let replacement = ShortcutBinding(id: id, shortcut: shortcut, scriptID: scriptID)
+        if let conflict = bindings.first(where: { $0.id != id && $0.shortcut == shortcut }) {
+            show(error: ShortcutCoordinatorError.shortcutConflict(existingBindingID: conflict.id))
+            return false
+        }
         let wasRegistered = await shortcutCoordinator.registeredBindings().contains { $0.id == id }
         do {
             try await shortcutCoordinator.register(replacement)
@@ -338,6 +352,37 @@ final class AppModel: ObservableObject {
         self.language = language
         userDefaults.set(language.rawValue, forKey: AppLanguage.defaultsKey)
         dismissMessages()
+    }
+
+    func refreshLoginItemStatus() {
+        loginItemStatus = loginItemManager.status
+    }
+
+    func setLaunchAtLoginEnabled(_ enabled: Bool) {
+        do {
+            try loginItemManager.setEnabled(enabled)
+            refreshLoginItemStatus()
+            switch loginItemStatus {
+            case .enabled:
+                noticeMessage = text("status.loginItem.enabled")
+                errorMessage = nil
+            case .notRegistered:
+                noticeMessage = text("status.loginItem.disabled")
+                errorMessage = nil
+            case .requiresApproval:
+                noticeMessage = text("status.loginItem.requiresApproval")
+                errorMessage = nil
+            case .notFound:
+                show(message: text("error.loginItem.notFound"))
+            }
+        } catch {
+            refreshLoginItemStatus()
+            show(error: error)
+        }
+    }
+
+    func openLoginItemsSettings() {
+        loginItemManager.openSystemSettings()
     }
 
     func bindingCount(for scriptID: UUID) -> Int {

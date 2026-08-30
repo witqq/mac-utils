@@ -85,6 +85,30 @@ private actor AppModelConfigurationFile: ConfigurationFileAccess {
     func setFailsWrites(_ value: Bool) { failsWrites = value }
 }
 
+@MainActor
+private final class AppModelLoginItemManager: LoginItemManaging {
+    enum Failure: Error { case change }
+
+    var status: LoginItemStatus
+    var requestedValues: [Bool] = []
+    var opensSettingsCount = 0
+    var failsChanges = false
+
+    init(status: LoginItemStatus = .notRegistered) {
+        self.status = status
+    }
+
+    func setEnabled(_ enabled: Bool) throws {
+        requestedValues.append(enabled)
+        if failsChanges { throw Failure.change }
+        status = enabled ? .enabled : .notRegistered
+    }
+
+    func openSystemSettings() {
+        opensSettingsCount += 1
+    }
+}
+
 private let appMainID = DisplayID("app-main")
 private let appSecondID = DisplayID("app-second")
 
@@ -101,7 +125,8 @@ private func appDisplay(_ id: DisplayID, role: DisplayRole, x: Int32 = 0) -> Dis
 private func makeModel(
     displayManager: AppModelDisplayManager,
     configurationFile: AppModelConfigurationFile = AppModelConfigurationFile(),
-    hotKeyRegistrar: AppModelHotKeyRegistrar = AppModelHotKeyRegistrar()
+    hotKeyRegistrar: AppModelHotKeyRegistrar = AppModelHotKeyRegistrar(),
+    loginItemManager: AppModelLoginItemManager = AppModelLoginItemManager()
 ) throws -> AppModel {
     var registry = ActionRegistry()
     try DisplayActions.register(in: &registry, manager: displayManager)
@@ -124,8 +149,41 @@ private func makeModel(
         stateProviders: stateProviders,
         shortcutCoordinator: coordinator,
         configurationStore: store,
+        loginItemManager: loginItemManager,
         userDefaults: defaults
     )
+}
+
+@Test @MainActor
+func loginItemStateIsReadWithoutSilentlyChangingItAndUserActionsAreForwarded() async throws {
+    let manager = AppModelDisplayManager(displays: [appDisplay(appMainID, role: .main)])
+    let loginItems = AppModelLoginItemManager(status: .requiresApproval)
+    let model = try makeModel(displayManager: manager, loginItemManager: loginItems)
+
+    await model.start()
+    #expect(model.loginItemStatus == .requiresApproval)
+    #expect(loginItems.requestedValues.isEmpty)
+
+    model.setLaunchAtLoginEnabled(false)
+    #expect(loginItems.requestedValues == [false])
+    #expect(model.loginItemStatus == .notRegistered)
+    #expect(model.noticeMessage == "Mac Utils will no longer launch when you log in.")
+
+    model.openLoginItemsSettings()
+    #expect(loginItems.opensSettingsCount == 1)
+}
+
+@Test @MainActor
+func loginItemFailureKeepsTheSystemStatusAndShowsALocalizedError() throws {
+    let manager = AppModelDisplayManager(displays: [appDisplay(appMainID, role: .main)])
+    let loginItems = AppModelLoginItemManager()
+    loginItems.failsChanges = true
+    let model = try makeModel(displayManager: manager, loginItemManager: loginItems)
+
+    model.setLaunchAtLoginEnabled(true)
+
+    #expect(model.loginItemStatus == .notRegistered)
+    #expect(model.errorMessage?.contains("could not complete the operation") == true)
 }
 
 @Test @MainActor
@@ -313,6 +371,41 @@ func unavailableStoredHotkeyStaysEditableWithoutBlockingScriptChanges() async th
 }
 
 @Test @MainActor
+func inactiveStoredHotkeyStillPreventsADuplicateAssignment() async throws {
+    let file = AppModelConfigurationFile()
+    let script = UserScript(
+        name: "Stored conflicts",
+        source: "set-main-display display=\"app-main\""
+    )
+    let first = GlobalShortcut(keyCode: 40, modifiers: [.command, .option])
+    let unavailable = GlobalShortcut(keyCode: 14, modifiers: [.command, .option])
+    let firstBinding = ShortcutBinding(shortcut: first, scriptID: script.id)
+    let unavailableBinding = ShortcutBinding(shortcut: unavailable, scriptID: script.id)
+    await file.seed(try JSONEncoder().encode(AppConfiguration(
+        scripts: [script],
+        bindings: [firstBinding, unavailableBinding]
+    )))
+    let manager = AppModelDisplayManager(displays: [appDisplay(appMainID, role: .main)])
+    let registrar = AppModelHotKeyRegistrar()
+    await registrar.makeUnavailable(unavailable)
+    let model = try makeModel(
+        displayManager: manager,
+        configurationFile: file,
+        hotKeyRegistrar: registrar
+    )
+    await model.start()
+
+    #expect(!(await model.updateBinding(
+        id: firstBinding.id,
+        shortcut: unavailable,
+        scriptID: script.id
+    )))
+
+    #expect(model.bindings.first(where: { $0.id == firstBinding.id })?.shortcut == first)
+    #expect(model.errorMessage?.contains("already assigned") == true)
+}
+
+@Test @MainActor
 func editingAHotkeyReusesTheBindingAndPersistsTheReplacement() async throws {
     let manager = AppModelDisplayManager(displays: [appDisplay(appMainID, role: .main)])
     let registrar = AppModelHotKeyRegistrar()
@@ -473,9 +566,11 @@ func releaseUISurfacesRenderForEnglishAndRussianIncludingOnboarding() async thro
     #expect(menuData.count > 10_000)
 
     for (language, tab) in [
+        (AppLanguage.english, SettingsTab.general),
         (AppLanguage.english, SettingsTab.scripts),
         (.english, .shortcuts),
         (.russian, .help),
+        (.russian, .general),
     ] {
         model.setLanguage(language)
         let data = try snapshot(
@@ -603,4 +698,30 @@ private func fencedTextBlocks(in markdown: String) -> [String] {
         }
     }
     return blocks
+}
+
+@Test @MainActor
+func shortcutRecorderCapturesAModifiedKeyEventAndPublishesItsValue() throws {
+    let button = ShortcutCaptureButton()
+    button.text = AppText(language: .english)
+    var captured: GlobalShortcut?
+    button.onShortcut = { captured = $0 }
+    button.beginRecording()
+    let event = try #require(NSEvent.keyEvent(
+        with: .keyDown,
+        location: .zero,
+        modifierFlags: [.command, .option],
+        timestamp: 0,
+        windowNumber: 0,
+        context: nil,
+        characters: "e",
+        charactersIgnoringModifiers: "e",
+        isARepeat: false,
+        keyCode: 14
+    ))
+
+    button.keyDown(with: event)
+
+    #expect(captured == GlobalShortcut(keyCode: 14, modifiers: [.command, .option]))
+    #expect(button.accessibilityValue() as? String == "⌥⌘E")
 }

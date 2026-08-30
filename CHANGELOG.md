@@ -4,7 +4,15 @@ All notable public changes to Mac Utils are recorded here.
 
 ## Unreleased
 
-- No unreleased changes.
+### Added
+
+- Optional launch at login through the public macOS Service Management API.
+- A bilingual General settings screen with live enabled, disabled, approval-required, and unavailable states plus a direct handoff to Login Items in System Settings.
+
+### Changed
+
+- App Store export-compliance answers are streamlined by declaring that the app does not use non-exempt encryption.
+- The documented future Magic Trackpad handoff now has a public-API feasibility report and a two-Mac prototype boundary.
 
 ## 1.0.0 — 2026-08-30
 

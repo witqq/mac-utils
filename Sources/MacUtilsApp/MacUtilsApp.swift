@@ -58,14 +58,24 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
             let displayManager: any DisplayManaging = options.usesScreenshotFixture
                 ? ScreenshotDisplayManager()
                 : DisplayController()
+            let loginItemManager: any LoginItemManaging = options.usesScreenshotFixture
+                ? ScreenshotLoginItemManager()
+                : SystemLoginItemManager()
             var registry = ActionRegistry()
             try DisplayActions.register(in: &registry, manager: displayManager)
             var stateProviders = StateProviderRegistry()
             try DisplayStateProviders.register(in: &stateProviders, manager: displayManager)
-            let coordinator = try ShortcutCoordinator.live(
-                registry: registry,
-                stateProviders: stateProviders
-            )
+            let coordinator = if options.usesScreenshotFixture {
+                ShortcutCoordinator.inMemoryFixture(
+                    registry: registry,
+                    stateProviders: stateProviders
+                )
+            } else {
+                try ShortcutCoordinator.live(
+                    registry: registry,
+                    stateProviders: stateProviders
+                )
+            }
             let model = AppModel(
                 displayManager: displayManager,
                 registry: registry,
@@ -73,6 +83,7 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
                 shortcutCoordinator: coordinator,
                 configurationStore: options.configurationURL.map(ConfigurationStore.init(fileURL:))
                     ?? ConfigurationStore(),
+                loginItemManager: loginItemManager,
                 initialLanguage: options.initialLanguage
             )
             shortcutCoordinator = coordinator

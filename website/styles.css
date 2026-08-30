@@ -88,7 +88,7 @@ p { color: var(--muted); }
 
 .section { width: min(calc(100% - 40px), var(--content)); margin: 0 auto; padding: 110px 0; }
 .section-heading { max-width: 760px; margin-bottom: 42px; }
-.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .feature-card, .help-grid article { padding: 26px; background: linear-gradient(145deg, rgba(26,42,67,.8), rgba(10,18,31,.8)); border: 1px solid var(--line); border-radius: 20px; }
 .feature-card p, .help-grid p { margin-bottom: 0; }
 .feature-icon { display: grid; width: 42px; height: 42px; margin-bottom: 34px; place-items: center; border-radius: 12px; background: rgba(57,178,255,.14); color: var(--blue); font-size: 23px; }

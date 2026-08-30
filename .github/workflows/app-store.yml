@@ -6,12 +6,12 @@ on:
       version:
         description: Marketing version matching project.yml
         required: true
-        default: "1.0.0"
+        default: "1.1.0"
         type: string
       build:
         description: App Store build number
         required: true
-        default: "1"
+        default: "2"
         type: string
       submission:
         description: Validate only or upload after validation

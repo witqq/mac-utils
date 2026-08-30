@@ -1,4 +1,21 @@
 import MacUtilsCore
+import MacUtilsSystem
+
+/// Deterministic login-item state used only by the explicit screenshot launch mode.
+@MainActor
+final class ScreenshotLoginItemManager: LoginItemManaging {
+    private(set) var status: LoginItemStatus
+
+    init(status: LoginItemStatus = .enabled) {
+        self.status = status
+    }
+
+    func setEnabled(_ enabled: Bool) throws {
+        status = enabled ? .enabled : .notRegistered
+    }
+
+    func openSystemSettings() {}
+}
 
 /// Deterministic display data used only by the explicit screenshot launch mode.
 actor ScreenshotDisplayManager: DisplayManaging {

@@ -60,6 +60,7 @@ final class ShortcutCaptureButton: NSButton {
     func beginRecording() {
         isRecording = true
         title = text("recorder.press")
+        setAccessibilityValue(text("recorder.press"))
         window?.makeFirstResponder(self)
     }
 
@@ -82,6 +83,7 @@ final class ShortcutCaptureButton: NSButton {
         guard modifiers.contains(.command) || modifiers.contains(.option) || modifiers.contains(.control) else {
             NSSound.beep()
             title = text("recorder.modifierRequired")
+            setAccessibilityValue(text("recorder.modifierRequired"))
             return
         }
 
@@ -107,6 +109,7 @@ final class ShortcutCaptureButton: NSButton {
     private func updatePresentation() {
         guard !isRecording else { return }
         title = displayedShortcut.map(text.shortcut) ?? text("recorder.record")
+        setAccessibilityValue(displayedShortcut.map(text.shortcut) ?? text("recorder.record"))
         toolTip = text("recorder.help")
         setAccessibilityLabel(text("recorder.accessibility"))
         setAccessibilityHelp(text("recorder.help"))
