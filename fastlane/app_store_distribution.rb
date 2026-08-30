@@ -1,4 +1,5 @@
 require "bigdecimal"
+require "date"
 require "json"
 require "net/http"
 require "uri"
@@ -113,11 +114,7 @@ class AppStoreDistribution
 
   def ensure_free!(app_id)
     schedule = optional_get("/v1/apps/#{app_id}/appPriceSchedule")
-    if schedule
-      return if schedule_is_free?(schedule.fetch("data").fetch("id"))
-
-      raise "The app already has a non-free price schedule; change it to Free in App Store Connect"
-    end
+    return if schedule && schedule_is_free?(schedule.fetch("data").fetch("id"))
 
     price_points = all_pages(
       "/v1/apps/#{app_id}/appPricePoints",
@@ -128,6 +125,12 @@ class AppStoreDistribution
     free_point = price_points.find { |point| zero_price?(point) }
     raise "App Store Connect returned no free price point for #{BASE_TERRITORY}" unless free_point
 
+    schedule_price_change(app_id, free_point.fetch("id"), starts_today: !schedule.nil?)
+    updated_schedule = get("/v1/apps/#{app_id}/appPriceSchedule")
+    raise "App Store price schedule was updated but its active price is not free" unless schedule_is_free?(updated_schedule.fetch("data").fetch("id"))
+  end
+
+  def schedule_price_change(app_id, price_point_id, starts_today:)
     temporary_id = "${price-0}"
     post(
       "/v1/appPriceSchedules",
@@ -143,16 +146,14 @@ class AppStoreDistribution
         {
           type: "appPrices",
           id: temporary_id,
-          attributes: { startDate: nil, endDate: nil },
+          attributes: { startDate: starts_today ? Date.today.iso8601 : nil, endDate: nil },
           relationships: {
-            appPricePoint: { data: { type: "appPricePoints", id: free_point.fetch("id") } }
+            appPricePoint: { data: { type: "appPricePoints", id: price_point_id } }
           }
         }
       ]
     )
 
-    created_schedule = get("/v1/apps/#{app_id}/appPriceSchedule")
-    raise "App Store price schedule was created but is not free" unless schedule_is_free?(created_schedule.fetch("data").fetch("id"))
   end
 
   def schedule_is_free?(schedule_id)
@@ -162,8 +163,23 @@ class AppStoreDistribution
       "fields[appPricePoints]": "customerPrice,territory",
       limit: 200
     )
-    price_points = Array(response["included"]).select { |record| record["type"] == "appPricePoints" }
-    price_points.any? { |point| zero_price?(point) }
+    price_points = Array(response["included"])
+      .select { |record| record["type"] == "appPricePoints" }
+      .to_h { |record| [record.fetch("id"), record] }
+    today = Date.today
+    Array(response["data"]).any? do |price|
+      start_date = parse_date(price.dig("attributes", "startDate"))
+      end_date = parse_date(price.dig("attributes", "endDate"))
+      active = (start_date.nil? || start_date <= today) && (end_date.nil? || end_date >= today)
+      price_point_id = price.dig("relationships", "appPricePoint", "data", "id")
+      active && zero_price?(price_points[price_point_id] || {})
+    end
+  end
+
+  def parse_date(value)
+    Date.iso8601(value) unless value.to_s.empty?
+  rescue Date::Error
+    nil
   end
 
   def zero_price?(record)
