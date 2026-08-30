@@ -1,0 +1,20 @@
+Mac Utils is a focused menu bar utility for dependable display workflows.
+
+Build without code
+Create scripts in a visual editor. Add display actions, arrange them in order, and choose the displays each action should affect.
+
+Switch based on live state
+Toggle by State reads the current display mode every time. One branch can extend a mirrored display; the other can mirror it again. The result follows the real layout instead of relying on remembered state.
+
+Run from anywhere
+Assign a global keyboard shortcut to any saved script. A script can contain one action or a sequence of actions, and an existing shortcut remains active if a replacement cannot be registered.
+
+Display actions
+• Make a connected display the main display
+• Extend a connected display
+• Mirror one connected display from another
+
+Private by design
+Mac Utils has no account, analytics, advertising, or cloud service. Scripts and shortcut settings stay in the app’s local container.
+
+Available in English and Russian. Requires macOS 26 or later.

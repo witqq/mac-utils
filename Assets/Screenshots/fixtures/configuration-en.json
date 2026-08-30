@@ -1,0 +1,17 @@
+{
+  "bindings" : [
+    {
+      "id" : "22222222-2222-4222-8222-222222222222",
+      "scriptID" : "11111111-1111-4111-8111-111111111111",
+      "shortcut" : { "keyCode" : 40, "modifiers" : 3 }
+    }
+  ],
+  "schemaVersion" : 1,
+  "scripts" : [
+    {
+      "id" : "11111111-1111-4111-8111-111111111111",
+      "name" : "Toggle desk display",
+      "source" : "@toggle provider=\"display.mode\" equals=\"mirror\" display=\"screenshot-desk\"\n  @match\n    extend-display display=\"screenshot-desk\"\n  @otherwise\n    mirror-display display=\"screenshot-desk\" source=\"screenshot-main\"\n@end"
+    }
+  ]
+}

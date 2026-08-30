@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mac Utils — Display workflows. One shortcut.</title>
+  <meta name="description" content="Build visual display workflows and run them from any app with a global shortcut.">
+  <meta name="theme-color" content="#07101e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Mac Utils">
+  <meta property="og:description" content="Display workflows. One shortcut.">
+  <meta property="og:url" content="https://mac-utils.witqq.dev/">
+  <meta property="og:image" content="https://mac-utils.witqq.dev/assets/og-image.png">
+  <link rel="canonical" href="https://mac-utils.witqq.dev/">
+  <link rel="icon" href="assets/app-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main" data-en="Skip to content" data-ru="К содержимому">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Mac Utils home">
+      <img src="assets/app-icon.png" width="38" height="38" alt="">
+      <span>Mac Utils</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#features" data-en="Features" data-ru="Возможности">Features</a>
+      <a href="#how-it-works" data-en="How it works" data-ru="Как работает">How it works</a>
+      <a href="#help" data-en="Help" data-ru="Справка">Help</a>
+    </nav>
+    <div class="language-switch" role="group" aria-label="Language">
+      <button type="button" data-language="en" aria-pressed="true">EN</button>
+      <button type="button" data-language="ru" aria-pressed="false">RU</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-copy reveal">
+        <p class="eyebrow" data-en="A native macOS menu bar utility" data-ru="Нативная утилита для строки меню macOS">A native macOS menu bar utility</p>
+        <h1 data-en="Display workflows. One shortcut." data-ru="Сценарии для дисплеев. Одна клавиша.">Display workflows. One shortcut.</h1>
+        <p class="lede" data-en="Build reliable display actions with the mouse, combine them into a workflow, and run everything from any app." data-ru="Собирайте действия для дисплеев мышкой, объединяйте их в сценарий и запускайте из любого приложения.">Build reliable display actions with the mouse, combine them into a workflow, and run everything from any app.</p>
+        <div class="cta-row">
+          <a class="button primary" href="https://github.com/witqq/mac-utils/releases/latest" data-en="Download DMG" data-ru="Скачать DMG">Download DMG</a>
+          <a class="button secondary" href="https://github.com/witqq/mac-utils" data-en="View on GitHub" data-ru="Открыть GitHub">View on GitHub</a>
+          <span class="button disabled" aria-disabled="true" data-en="App Store — coming soon" data-ru="App Store — скоро">App Store — coming soon</span>
+        </div>
+        <p class="availability" data-en="Requires macOS 26 or later. English and Russian included." data-ru="Требуется macOS 26 или новее. Русский и английский интерфейс.">Requires macOS 26 or later. English and Russian included.</p>
+      </div>
+      <div class="hero-visual reveal" aria-hidden="true">
+        <div class="orb"></div>
+        <img data-localized-image data-en-src="assets/builder-en.webp" data-ru-src="assets/builder-ru.webp" src="assets/builder-en.webp" alt="">
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="section-heading">
+        <p class="eyebrow" data-en="Designed for the workflow you actually use" data-ru="Для реальных рабочих сценариев">Designed for the workflow you actually use</p>
+        <h2 data-en="Small utility. Composable core." data-ru="Компактная утилита. Расширяемое ядро.">Small utility. Composable core.</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-icon">⌁</span><h3 data-en="Visual builder" data-ru="Визуальный конструктор">Visual builder</h3><p data-en="Add actions, state checks, and branches without writing code." data-ru="Добавляйте действия, проверки состояния и ветви без программирования.">Add actions, state checks, and branches without writing code.</p></article>
+        <article class="feature-card"><span class="feature-icon">⌘</span><h3 data-en="Global shortcuts" data-ru="Глобальные клавиши">Global shortcuts</h3><p data-en="Run a full workflow while any application is active, then edit the assignment safely." data-ru="Запускайте весь сценарий из любого приложения и безопасно меняйте сочетание.">Run a full workflow while any application is active, then edit the assignment safely.</p></article>
+        <article class="feature-card"><span class="feature-icon">◫</span><h3 data-en="Display roles" data-ru="Режимы дисплеев">Display roles</h3><p data-en="Make a display main, extend the desktop, or mirror another connected display." data-ru="Назначайте основной дисплей, расширяйте рабочий стол или включайте зеркало.">Make a display main, extend the desktop, or mirror another connected display.</p></article>
+        <article class="feature-card"><span class="feature-icon">◇</span><h3 data-en="Local and private" data-ru="Локально и приватно">Local and private</h3><p data-en="No account, analytics, ads, cloud service, or collected data." data-ru="Без аккаунта, аналитики, рекламы, облачного сервиса и сбора данных.">No account, analytics, ads, cloud service, or collected data.</p></article>
+      </div>
+    </section>
+
+    <section class="section split" id="how-it-works">
+      <div class="product-shot reveal">
+        <img data-localized-image data-en-src="assets/builder-en.webp" data-ru-src="assets/builder-ru.webp" src="assets/builder-en.webp" data-en-alt="Mac Utils visual workflow builder" data-ru-alt="Визуальный конструктор сценариев Mac Utils" alt="Mac Utils visual workflow builder">
+      </div>
+      <div class="split-copy">
+        <p class="eyebrow" data-en="Universal toggle" data-ru="Универсальный переключатель">Universal toggle</p>
+        <h2 data-en="React to the current state" data-ru="Учитывайте текущее состояние">React to the current state</h2>
+        <p data-en="Toggle by State reads the display mode at the moment you press the shortcut. It does not guess what happened last time." data-ru="«Переключение по состоянию» читает режим дисплея в момент нажатия. Оно не пытается угадать результат прошлого запуска.">Toggle by State reads the display mode at the moment you press the shortcut. It does not guess what happened last time.</p>
+        <div class="logic-card" aria-label="Toggle logic">
+          <div><span data-en="IF" data-ru="ЕСЛИ">IF</span><strong data-en="Desk Display is mirrored" data-ru="Дисплей зеркальный">Desk Display is mirrored</strong></div>
+          <div><span data-en="THEN" data-ru="ТО">THEN</span><strong data-en="Extend it" data-ru="Расширить">Extend it</strong></div>
+          <div><span data-en="OTHERWISE" data-ru="ИНАЧЕ">OTHERWISE</span><strong data-en="Mirror it" data-ru="Включить зеркало">Mirror it</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section split reverse">
+      <div class="product-shot reveal">
+        <img data-localized-image data-en-src="assets/shortcuts-en.webp" data-ru-src="assets/shortcuts-ru.webp" src="assets/shortcuts-en.webp" data-en-alt="Mac Utils global shortcut editor" data-ru-alt="Редактор глобальных горячих клавиш Mac Utils" alt="Mac Utils global shortcut editor">
+      </div>
+      <div class="split-copy">
+        <p class="eyebrow" data-en="Run from anywhere" data-ru="Запускайте откуда угодно">Run from anywhere</p>
+        <h2 data-en="One key can run many actions" data-ru="Одна клавиша запускает много действий">One key can run many actions</h2>
+        <p data-en="Assign one native global shortcut to an entire script. If macOS rejects a replacement, the previous working shortcut stays active." data-ru="Назначьте нативную глобальную клавишу целому сценарию. Если macOS отклонит замену, прежнее рабочее сочетание останется активным.">Assign one native global shortcut to an entire script. If macOS rejects a replacement, the previous working shortcut stays active.</p>
+      </div>
+    </section>
+
+    <section class="section help-grid" id="help">
+      <article><p class="eyebrow" data-en="Built-in help" data-ru="Встроенная справка">Built-in help</p><h2 data-en="Start without a manual" data-ru="Начните без отдельного руководства">Start without a manual</h2><p data-en="Onboarding explains the workflow, and the Help tab defines every display role and the mirror/extend recipe." data-ru="Онбординг показывает рабочий процесс, а вкладка «Справка» объясняет режимы дисплеев и рецепт переключения зеркала и расширения.">Onboarding explains the workflow, and the Help tab defines every display role and the mirror/extend recipe.</p></article>
+      <article id="privacy"><p class="eyebrow" data-en="Privacy" data-ru="Конфиденциальность">Privacy</p><h2 data-en="Your setup stays on your Mac" data-ru="Настройки остаются на вашем Mac">Your setup stays on your Mac</h2><p data-en="Mac Utils stores scripts and shortcuts only in its local app container. It collects no personal or usage data and makes no network requests for product operation." data-ru="Mac Utils хранит сценарии и клавиши только в локальном контейнере. Приложение не собирает персональные или технические данные и не использует сеть для работы.">Mac Utils stores scripts and shortcuts only in its local app container. It collects no personal or usage data and makes no network requests for product operation.</p><a href="https://github.com/witqq/mac-utils/blob/main/docs/PRIVACY.md" data-en="Read the privacy policy" data-ru="Прочитать политику конфиденциальности">Read the privacy policy</a></article>
+      <article id="support"><p class="eyebrow" data-en="Support" data-ru="Поддержка">Support</p><h2 data-en="Need a hand?" data-ru="Нужна помощь?">Need a hand?</h2><p data-en="Read the user guide or report a reproducible problem on GitHub. Include the macOS version and connected display layout, but never publish sensitive diagnostics." data-ru="Откройте руководство или сообщите о воспроизводимой проблеме на GitHub. Укажите версию macOS и раскладку дисплеев, но не публикуйте чувствительные данные.">Read the user guide or report a reproducible problem on GitHub. Include the macOS version and connected display layout, but never publish sensitive diagnostics.</p><a href="https://github.com/witqq/mac-utils/blob/main/docs/SUPPORT.md" data-en="Open support guide" data-ru="Открыть справку поддержки">Open support guide</a></article>
+    </section>
+
+    <section class="final-cta">
+      <img src="assets/app-icon.png" width="92" height="92" alt="">
+      <h2 data-en="Make display switching feel instant." data-ru="Переключайте дисплеи без лишних действий.">Make display switching feel instant.</h2>
+      <div class="cta-row centered">
+        <a class="button primary" href="https://github.com/witqq/mac-utils/releases/latest" data-en="Download from GitHub" data-ru="Скачать с GitHub">Download from GitHub</a>
+        <span class="button disabled" aria-disabled="true" data-en="App Store — coming soon" data-ru="App Store — скоро">App Store — coming soon</span>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© 2026 witqq · MIT License</span>
+    <div><a href="https://github.com/witqq/mac-utils">GitHub</a><a href="#privacy" data-en="Privacy" data-ru="Конфиденциальность">Privacy</a><a href="#support" data-en="Support" data-ru="Поддержка">Support</a><a href="https://witqq.dev/">witqq.dev</a></div>
+  </footer>
+</body>
+</html>

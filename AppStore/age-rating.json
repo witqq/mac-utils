@@ -1,0 +1,18 @@
+{
+  "finalRatingAssignedByAppStoreConnect" : true,
+  "answers" : {
+    "advertising" : "none",
+    "contests" : "none",
+    "gambling" : "none",
+    "gamblingSimulated" : "none",
+    "horrorOrFear" : "none",
+    "medicalOrTreatmentInformation" : "none",
+    "matureOrSuggestiveThemes" : "none",
+    "profanityOrCrudeHumor" : "none",
+    "sexualContentOrNudity" : "none",
+    "unrestrictedWebAccess" : false,
+    "userGeneratedContent" : false,
+    "violenceCartoonOrFantasy" : "none",
+    "violenceRealistic" : "none"
+  }
+}

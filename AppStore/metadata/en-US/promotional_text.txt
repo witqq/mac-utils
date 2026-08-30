@@ -1,0 +1,1 @@
+Build a visual display workflow once, then switch layouts from any app with one global shortcut.

@@ -1,0 +1,1 @@
+Initial release with visual display workflows, state-based mirror/extend toggles, editable global shortcuts, and built-in English and Russian guidance.

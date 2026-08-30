@@ -1,0 +1,1 @@
+display,monitor,mirror,extend,shortcut,hotkey,automation,workflow,screen,menubar
