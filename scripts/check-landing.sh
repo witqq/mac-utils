@@ -19,7 +19,16 @@ html.scan(/href="#([^"]+)"/).flatten.each { |target| errors << "Missing anchor t
 errors << "App Store CTA must remain disabled until a product URL exists" unless html.scan(/aria-disabled="true"/).length == 2
 errors << "Landing must expose EN and RU controls" unless html.include?('data-language="en"') && html.include?('data-language="ru"')
 errors << "Landing contains an insecure external URL" if html.match?(/(?:href|src)="http:\/\//)
-errors << "Landing depends on an external runtime asset" if html.match?(/(?:src|href)="https:\/\/(?!github\.com|witqq\.dev|mac-utils\.witqq\.dev)/)
+external_runtime_urls = html.scan(/\bsrc="(https:\/\/[^"]+)"/).flatten
+html.scan(/<link\b[^>]*>/).each do |tag|
+  rel = tag[/\brel="([^"]+)"/, 1].to_s.split
+  next if (rel & %w[stylesheet icon preload modulepreload manifest]).empty?
+
+  href = tag[/\bhref="(https:\/\/[^"]+)"/, 1]
+  external_runtime_urls << href if href
+end
+errors << "Landing depends on external runtime assets: #{external_runtime_urls.join(", ")}" unless external_runtime_urls.empty?
+errors << "Landing must contain exactly one Made with Moira attribution" unless html.scan(/class="moira-badge"[^>]+href="https:\/\/moira-mcp\.com\/"[^>]*>Made with Moira<\/a>/).length == 1
 abort errors.join("\n") unless errors.empty?
-puts "Landing source valid: unique anchors, bilingual controls, local runtime assets, HTTPS external links, disabled App Store CTAs."
+puts "Landing source valid: unique anchors, bilingual controls, local runtime assets, HTTPS external links, disabled App Store CTAs, and Made with Moira attribution."
 RUBY
