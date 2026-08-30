@@ -51,7 +51,7 @@ git push origin v1.0.0
 
 The release workflow rejects malformed or mismatched versions. It creates a clean universal Direct archive, signs the app and DMG, submits the DMG to Apple notarization, staples and verifies the ticket, calculates SHA-256, and creates GitHub-generated release notes. It publishes `Mac-Utils-v1.0.0.dmg` plus `Mac-Utils-v1.0.0.dmg.sha256`, downloads both back from GitHub, verifies the checksum/signature/ticket/image, and copies the app through the DMG’s `/Applications` layout.
 
-Rerunning the same workflow is safe: it targets the existing tag and release, replaces only the two versioned assets with newly verified outputs, and does not create a second release. Never move or force-update a published tag. If source changes are required, publish a new patch version.
+Rerunning the same workflow is safe: open **Actions → GitHub Release → Run workflow** on `main` and enter the existing tag. The workflow checks out that immutable tag, targets its existing release, replaces only the two versioned assets with newly verified outputs, and does not create a second release. Never move or force-update a published tag. If source changes are required, publish a new patch version.
 
 ## Validate or upload the App Store build
 
