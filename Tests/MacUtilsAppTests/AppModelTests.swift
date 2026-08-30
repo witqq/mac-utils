@@ -93,6 +93,7 @@ private final class AppModelLoginItemManager: LoginItemManaging {
     var requestedValues: [Bool] = []
     var opensSettingsCount = 0
     var failsChanges = false
+    var statusAfterEnabling: LoginItemStatus = .enabled
 
     init(status: LoginItemStatus = .notRegistered) {
         self.status = status
@@ -101,7 +102,7 @@ private final class AppModelLoginItemManager: LoginItemManaging {
     func setEnabled(_ enabled: Bool) throws {
         requestedValues.append(enabled)
         if failsChanges { throw Failure.change }
-        status = enabled ? .enabled : .notRegistered
+        status = enabled ? statusAfterEnabling : .notRegistered
     }
 
     func openSystemSettings() {
@@ -184,6 +185,21 @@ func loginItemFailureKeepsTheSystemStatusAndShowsALocalizedError() throws {
 
     #expect(model.loginItemStatus == .notRegistered)
     #expect(model.errorMessage?.contains("could not complete the operation") == true)
+}
+
+@Test @MainActor
+func loginItemEnableSurfacesTheSystemApprovalRequirement() throws {
+    let manager = AppModelDisplayManager(displays: [appDisplay(appMainID, role: .main)])
+    let loginItems = AppModelLoginItemManager()
+    loginItems.statusAfterEnabling = .requiresApproval
+    let model = try makeModel(displayManager: manager, loginItemManager: loginItems)
+
+    model.setLaunchAtLoginEnabled(true)
+
+    #expect(loginItems.requestedValues == [true])
+    #expect(model.loginItemStatus == .requiresApproval)
+    #expect(model.noticeMessage == "Allow Mac Utils in System Settings to finish enabling automatic launch.")
+    #expect(model.errorMessage == nil)
 }
 
 @Test @MainActor
