@@ -1,0 +1,197 @@
+name: MacUtils
+
+options:
+  minimumXcodeGenVersion: 2.46.0
+  xcodeVersion: "26.3"
+  deploymentTarget:
+    macOS: "26.0"
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+configs:
+  Debug: debug
+  Release-Direct: release
+  Release-AppStore: release
+
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    CLANG_ENABLE_MODULES: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.0.0"
+  configs:
+    Debug:
+      SWIFT_OPTIMIZATION_LEVEL: -Onone
+      ENABLE_TESTABILITY: YES
+    Release-Direct:
+      SWIFT_OPTIMIZATION_LEVEL: -O
+      DEAD_CODE_STRIPPING: YES
+    Release-AppStore:
+      SWIFT_OPTIMIZATION_LEVEL: -O
+      DEAD_CODE_STRIPPING: YES
+
+targets:
+  MacUtilsCore:
+    type: library.static
+    platform: macOS
+    sources:
+      - Sources/MacUtilsCore
+    settings:
+      base:
+        PRODUCT_MODULE_NAME: MacUtilsCore
+        PRODUCT_NAME: MacUtilsCore
+        SWIFT_INSTALL_OBJC_HEADER: NO
+
+  MacUtilsSystem:
+    type: library.static
+    platform: macOS
+    sources:
+      - Sources/MacUtilsSystem
+    dependencies:
+      - target: MacUtilsCore
+    settings:
+      base:
+        PRODUCT_MODULE_NAME: MacUtilsSystem
+        PRODUCT_NAME: MacUtilsSystem
+        SWIFT_INSTALL_OBJC_HEADER: NO
+
+  MacUtilsApp:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/MacUtilsApp
+        excludes:
+          - Resources
+      - path: Sources/MacUtilsApp/Resources
+        buildPhase: resources
+    dependencies:
+      - target: MacUtilsCore
+      - target: MacUtilsSystem
+    settings:
+      base:
+        PRODUCT_NAME: Mac Utils
+        PRODUCT_MODULE_NAME: MacUtilsApp
+        PRODUCT_BUNDLE_IDENTIFIER: com.witqq.mac-utils
+        DEVELOPMENT_TEAM: 4U4284E89E
+        INFOPLIST_FILE: Config/App/Info.plist
+        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_APP_INTENTS_METADATA_GENERATION: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        COMBINE_HIDPI_IMAGES: YES
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: Config/Entitlements/Direct.entitlements
+        Release-Direct:
+          CODE_SIGN_ENTITLEMENTS: Config/Entitlements/Direct.entitlements
+        Release-AppStore:
+          CODE_SIGN_ENTITLEMENTS: Config/Entitlements/AppStore.entitlements
+
+  MacUtilsCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/MacUtilsCoreTests
+    dependencies:
+      - target: MacUtilsCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.witqq.mac-utils.core-tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  MacUtilsSystemTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/MacUtilsSystemTests
+    dependencies:
+      - target: MacUtilsCore
+      - target: MacUtilsSystem
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.witqq.mac-utils.system-tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  MacUtilsAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/MacUtilsAppTests
+    dependencies:
+      - target: MacUtilsApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.witqq.mac-utils.app-tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Mac Utils.app/Contents/MacOS/Mac Utils"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
+  MacUtilsUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - Tests/MacUtilsUITests
+    dependencies:
+      - target: MacUtilsApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.witqq.mac-utils.ui-tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MacUtilsApp
+
+schemes:
+  MacUtils-Direct:
+    build:
+      targets:
+        MacUtilsApp: all
+        MacUtilsCoreTests: [test]
+        MacUtilsSystemTests: [test]
+        MacUtilsAppTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - MacUtilsCoreTests
+        - MacUtilsSystemTests
+        - MacUtilsAppTests
+    profile:
+      config: Release-Direct
+    analyze:
+      config: Debug
+    archive:
+      config: Release-Direct
+
+  MacUtils-AppStore:
+    build:
+      targets:
+        MacUtilsApp: all
+    run:
+      config: Debug
+    profile:
+      config: Release-AppStore
+    analyze:
+      config: Debug
+    archive:
+      config: Release-AppStore
+
+  MacUtils-UI:
+    build:
+      targets:
+        MacUtilsApp: all
+        MacUtilsUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - MacUtilsUITests

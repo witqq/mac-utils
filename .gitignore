@@ -1,0 +1,26 @@
+.build/
+.swiftpm/
+.DS_Store
+DerivedData/
+*.profraw
+
+# Local credentials and Apple signing material
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+*.mobileprovision
+*.provisionprofile
+*.keychain
+*.keychain-db
+
+# Local signed/exported release artifacts
+*.dmg
+*.pkg
+*.xcarchive/
+*.xcdistributionlogs/
