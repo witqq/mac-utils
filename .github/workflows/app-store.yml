@@ -84,7 +84,9 @@ jobs:
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             MARKETING_VERSION="$RELEASE_VERSION" \
-            CURRENT_PROJECT_VERSION="$RELEASE_BUILD"
+            CURRENT_PROJECT_VERSION="$RELEASE_BUILD" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM=4U4284E89E
           xcodebuild -exportArchive \
             -archivePath "$archive_path" \
             -exportPath "$export_path" \

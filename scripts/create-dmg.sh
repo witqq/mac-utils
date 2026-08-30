@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-repo_root="${0:A:h:h}"
+repo_root="${MAC_UTILS_REPO_ROOT:-${0:A:h:h}}"
 app_path="${1:-}"
 output_path="${2:-}"
 signing_identity="${3:-}"
