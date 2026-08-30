@@ -1,0 +1,154 @@
+name: GitHub Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Sign, notarize, publish, and verify
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: github-release
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      APPLE_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64 }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_PASSWORD }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+    steps:
+      - name: Check out the immutable tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode 26.3
+        run: sudo xcode-select --switch /Applications/Xcode_26.3.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Validate tag and release version
+        run: |
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor HEAD origin/main
+          version="$(./scripts/verify-release-version.sh "$RELEASE_TAG")"
+          build="$(ruby -e 'text = File.read("project.yml"); match = text.match(/^\s*CURRENT_PROJECT_VERSION:\s*"([^"]+)"\s*$/); abort "CURRENT_PROJECT_VERSION not found" unless match; puts match[1]')"
+          print "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          print "RELEASE_BUILD=$build" >> "$GITHUB_ENV"
+
+      - name: Prepare protected signing credentials
+        run: |
+          ./scripts/install-apple-certificate.sh
+          ./scripts/write-app-store-connect-key.sh
+
+      - name: Create a clean signed Direct archive
+        run: |
+          ./scripts/generate-xcode-project.sh
+          output_root="$RUNNER_TEMP/mac-utils-release-$RELEASE_VERSION"
+          archive_path="$output_root/MacUtils-Direct.xcarchive"
+          export_path="$output_root/export"
+          mkdir -p "$output_root"
+          xcodebuild clean archive \
+            -project MacUtils.xcodeproj \
+            -scheme MacUtils-Direct \
+            -configuration Release-Direct \
+            -destination 'generic/platform=macOS' \
+            -archivePath "$archive_path" \
+            -derivedDataPath "$RUNNER_TEMP/mac-utils-release-derived-data" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_KEY_PATH" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+          xcodebuild -exportArchive \
+            -archivePath "$archive_path" \
+            -exportPath "$export_path" \
+            -exportOptionsPlist Config/ExportOptions/Direct.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_KEY_PATH" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+          app_path="$export_path/Mac Utils.app"
+          test -d "$app_path"
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+          test "$(defaults read "$app_path/Contents/Info" CFBundleShortVersionString)" = "$RELEASE_VERSION"
+          test "$(defaults read "$app_path/Contents/Info" CFBundleVersion)" = "$RELEASE_BUILD"
+          architectures="$(lipo -archs "$app_path/Contents/MacOS/Mac Utils")"
+          [[ "$architectures" == *arm64* && "$architectures" == *x86_64* ]]
+          print "RELEASE_APP_PATH=$app_path" >> "$GITHUB_ENV"
+          print "RELEASE_OUTPUT_ROOT=$output_root" >> "$GITHUB_ENV"
+
+      - name: Build, notarize, and verify the DMG
+        run: |
+          dmg_path="$RELEASE_OUTPUT_ROOT/Mac-Utils-$RELEASE_TAG.dmg"
+          ./scripts/create-dmg.sh "$RELEASE_APP_PATH" "$dmg_path" "Developer ID Application"
+          ./scripts/notarize-dmg.sh "$dmg_path" \
+            --key "$APP_STORE_CONNECT_KEY_PATH" \
+            --key-id "$APP_STORE_CONNECT_KEY_ID" \
+            --issuer "$APP_STORE_CONNECT_ISSUER_ID"
+          print "RELEASE_DMG_PATH=$dmg_path" >> "$GITHUB_ENV"
+
+      - name: Create or update the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="docs/releases/$RELEASE_TAG.md"
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --verify-tag \
+              --title "Mac Utils $RELEASE_TAG" \
+              --notes-file "$notes" \
+              --generate-notes
+          fi
+          gh release upload "$RELEASE_TAG" \
+            "$RELEASE_DMG_PATH" \
+            "$RELEASE_DMG_PATH.sha256" \
+            --clobber
+
+      - name: Download and verify published installation media
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          download_dir="$RUNNER_TEMP/mac-utils-release-download"
+          install_dir="$RUNNER_TEMP/mac-utils-install-test/Applications"
+          mount_point="$RUNNER_TEMP/mac-utils-release-mount"
+          mkdir -p "$download_dir" "$install_dir" "$mount_point"
+          gh release download "$RELEASE_TAG" \
+            --pattern "Mac-Utils-$RELEASE_TAG.dmg" \
+            --pattern "Mac-Utils-$RELEASE_TAG.dmg.sha256" \
+            --dir "$download_dir"
+          cd "$download_dir"
+          shasum -a 256 -c "Mac-Utils-$RELEASE_TAG.dmg.sha256"
+          downloaded_dmg="$download_dir/Mac-Utils-$RELEASE_TAG.dmg"
+          codesign --verify --verbose=4 "$downloaded_dmg"
+          xcrun stapler validate "$downloaded_dmg"
+          spctl --assess --type open --context context:primary-signature --verbose=4 "$downloaded_dmg"
+          hdiutil verify "$downloaded_dmg"
+          hdiutil attach -quiet -readonly -noautoopen -mountpoint "$mount_point" "$downloaded_dmg"
+          trap 'hdiutil detach "$mount_point" -quiet || true' EXIT
+          test "$(readlink "$mount_point/Applications")" = "/Applications"
+          ditto "$mount_point/Mac Utils.app" "$install_dir/Mac Utils.app"
+          codesign --verify --deep --strict --verbose=2 "$install_dir/Mac Utils.app"
+          installed_version="$(defaults read "$install_dir/Mac Utils.app/Contents/Info" CFBundleShortVersionString)"
+          test "$installed_version" = "$RELEASE_VERSION"
+          hdiutil detach "$mount_point" -quiet
+          trap - EXIT
+
+      - name: Remove ephemeral credentials
+        if: always()
+        run: |
+          if [[ -n "${MAC_UTILS_KEYCHAIN_PATH:-}" ]]; then
+            security delete-keychain "$MAC_UTILS_KEYCHAIN_PATH" || true
+          fi
+          rm -f "${APP_STORE_CONNECT_KEY_PATH:-}" || true

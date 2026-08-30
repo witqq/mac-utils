@@ -5,6 +5,7 @@
 [![macOS 26+](https://img.shields.io/badge/macOS-26%2B-111111?logo=apple)](docs/KNOWN-LIMITATIONS.md)
 [![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)](Package.swift)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/witqq/mac-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/witqq/mac-utils/actions/workflows/ci.yml)
 
 Mac Utils is a native menu bar application for building dependable macOS utility shortcuts without writing code. The first utility controls connected displays: make a display main, extend the desktop, mirror another display, or switch between layouts according to the current state.
 
@@ -66,6 +67,7 @@ The same key now extends a mirrored display and mirrors it again when it is exte
 - [Security policy](SECURITY.md)
 - [Known limitations](docs/KNOWN-LIMITATIONS.md)
 - [Contributing](CONTRIBUTING.md)
+- [Release operations](docs/RELEASING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Changelog](CHANGELOG.md)
 - [v1.0.0 release notes](docs/releases/v1.0.0.md)
@@ -83,7 +85,7 @@ The Swift Package Manager project is the module source of truth. `project.yml` i
 ./scripts/archive-xcode-local.sh app-store
 ```
 
-XcodeGen 2.46.0 or later is required for project generation. Local archive commands intentionally disable code signing; release signing and notarization use the protected release workflow.
+XcodeGen 2.46.0 or later is required for project generation. Local archive commands use identities from the developer’s Keychain; public release signing and notarization use protected GitHub environments.
 
 Core modules:
 

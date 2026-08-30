@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Tests, build, localization, and security
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode 26.3
+        run: sudo xcode-select --switch /Applications/Xcode_26.3.app
+
+      - name: Cache Swift build products
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-${{ runner.arch }}-swift-${{ hashFiles('Package.swift', 'project.yml') }}
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Verify documentation, localization, landing, and release assets
+        run: |
+          ./scripts/check-docs.sh
+          ./scripts/check-release-assets.sh
+
+      - name: Run Swift package tests
+        run: ./scripts/test.sh
+
+      - name: Generate Xcode project
+        run: ./scripts/generate-xcode-project.sh
+
+      - name: Run Xcode tests without signing
+        run: >-
+          xcodebuild test
+          -project MacUtils.xcodeproj
+          -scheme MacUtils-Direct
+          -destination 'platform=macOS,arch=arm64'
+          CODE_SIGNING_ALLOWED=NO
+
+      - name: Analyze Xcode project without signing
+        run: >-
+          xcodebuild analyze
+          -project MacUtils.xcodeproj
+          -scheme MacUtils-Direct
+          -destination 'platform=macOS,arch=arm64'
+          CODE_SIGNING_ALLOWED=NO
+
+      - name: Scan Git history for secrets
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_SUMMARY: "true"

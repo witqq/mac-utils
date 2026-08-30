@@ -9,6 +9,8 @@ Mac Utils выпускается по двум каналам в Apple Developer
 
 В локальном Keychain должны быть действующие identities Apple Development, Developer ID Application и Developer ID Installer. Для Store-экспорта Xcode может использовать управляемую в облаке identity Apple Distribution. Закрытые ключи, app-specific passwords и профили не хранятся в репозитории.
 
+Публичная автоматизация, защищённые environments, имена secrets, версии, повторные запуски и validation/upload Store описаны в документе [Выпуск релизов](RELEASING.ru.md). Локальные профили Keychain не копируются в CI.
+
 ## Локальные подписанные архивы
 
 Создайте подписанный архив и distribution export одной из команд:

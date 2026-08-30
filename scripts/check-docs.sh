@@ -22,7 +22,7 @@ for file in "${markdown_files[@]}"; do
     done < <(grep -Eo '\]\([^)]+' "$file" || true)
 done
 
-for file in .github/ISSUE_TEMPLATE/*.yml .github/release.yml; do
+for file in .github/ISSUE_TEMPLATE/*.yml .github/release.yml .github/workflows/*.yml; do
     ruby -e 'require "yaml"; YAML.safe_load(File.read(ARGV.fetch(0)), aliases: false)' "$file"
 done
 
