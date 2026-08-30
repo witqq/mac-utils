@@ -9,6 +9,8 @@ Mac Utils has two distribution channels under Apple Developer Team `4U4284E89E`:
 
 The local Keychain must contain valid Apple Development, Developer ID Application, and Developer ID Installer identities. Xcode may use a cloud-managed Apple Distribution identity for the Store export. Private keys, app-specific passwords, and profiles are never stored in the repository.
 
+Public automation, protected environment names, secret names, versioning, reruns, and Store validation/upload are documented in [Release operations](RELEASING.md). Local Keychain profiles are not copied into CI.
+
 ## Local signed archives
 
 Generate a signed archive and distribution export with one of these commands:

@@ -1,0 +1,134 @@
+name: App Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Marketing version matching project.yml
+        required: true
+        default: "1.0.0"
+        type: string
+      build:
+        description: App Store build number
+        required: true
+        default: "1"
+        type: string
+      submission:
+        description: Validate only or upload after validation
+        required: true
+        default: validate
+        type: choice
+        options:
+          - validate
+          - upload
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-store-${{ inputs.version }}-${{ inputs.build }}
+  cancel-in-progress: false
+
+jobs:
+  distribute:
+    name: Archive, validate, and optionally upload
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: app-store
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_BUILD: ${{ inputs.build }}
+      SUBMISSION: ${{ inputs.submission }}
+      APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_P12_BASE64 }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_P12_PASSWORD }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select Xcode 26.3
+        run: sudo xcode-select --switch /Applications/Xcode_26.3.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Validate version and build inputs
+        run: |
+          ./scripts/verify-release-version.sh "v$RELEASE_VERSION" >/dev/null
+          [[ "$RELEASE_BUILD" =~ ^[1-9][0-9]*$ ]]
+          [[ "$SUBMISSION" == "validate" || "$SUBMISSION" == "upload" ]]
+
+      - name: Prepare protected distribution credentials
+        run: |
+          ./scripts/install-apple-certificate.sh
+          ./scripts/write-app-store-connect-key.sh
+
+      - name: Create and export the App Store archive
+        run: |
+          ./scripts/generate-xcode-project.sh
+          output_root="$RUNNER_TEMP/mac-utils-app-store-$RELEASE_VERSION-$RELEASE_BUILD"
+          archive_path="$output_root/MacUtils-AppStore.xcarchive"
+          export_path="$output_root/export"
+          mkdir -p "$output_root"
+          xcodebuild clean archive \
+            -project MacUtils.xcodeproj \
+            -scheme MacUtils-AppStore \
+            -configuration Release-AppStore \
+            -destination 'generic/platform=macOS' \
+            -archivePath "$archive_path" \
+            -derivedDataPath "$RUNNER_TEMP/mac-utils-app-store-derived-data" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_KEY_PATH" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+            MARKETING_VERSION="$RELEASE_VERSION" \
+            CURRENT_PROJECT_VERSION="$RELEASE_BUILD"
+          xcodebuild -exportArchive \
+            -archivePath "$archive_path" \
+            -exportPath "$export_path" \
+            -exportOptionsPlist Config/ExportOptions/AppStore.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_KEY_PATH" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+          package_path="$(find "$export_path" -maxdepth 1 -type f -name '*.pkg' -print -quit)"
+          test -n "$package_path"
+          pkgutil --check-signature "$package_path"
+          print "APP_STORE_PACKAGE_PATH=$package_path" >> "$GITHUB_ENV"
+
+      - name: Validate with App Store Connect
+        run: |
+          cd "$RUNNER_TEMP"
+          xcrun altool --validate-app \
+            --file "$APP_STORE_PACKAGE_PATH" \
+            --type macos \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Upload to App Store Connect
+        if: env.SUBMISSION == 'upload'
+        run: |
+          cd "$RUNNER_TEMP"
+          xcrun altool --upload-app \
+            --file "$APP_STORE_PACKAGE_PATH" \
+            --type macos \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Preserve the validated Store package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Mac-Utils-AppStore-${{ inputs.version }}-${{ inputs.build }}
+          path: ${{ env.APP_STORE_PACKAGE_PATH }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Remove ephemeral credentials
+        if: always()
+        run: |
+          if [[ -n "${MAC_UTILS_KEYCHAIN_PATH:-}" ]]; then
+            security delete-keychain "$MAC_UTILS_KEYCHAIN_PATH" || true
+          fi
+          rm -f "${APP_STORE_CONNECT_KEY_PATH:-}" || true

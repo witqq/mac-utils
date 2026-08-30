@@ -5,6 +5,7 @@
 [![macOS 26+](https://img.shields.io/badge/macOS-26%2B-111111?logo=apple)](docs/KNOWN_LIMITATIONS.ru.md)
 [![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)](Package.swift)
 [![Лицензия MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/witqq/mac-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/witqq/mac-utils/actions/workflows/ci.yml)
 
 Mac Utils — нативное приложение в строке меню для создания надёжных утилит macOS без программирования. Первая утилита управляет подключёнными дисплеями: назначает основной дисплей, расширяет рабочий стол, включает зеркало или выбирает схему в зависимости от текущего состояния.
 
@@ -66,6 +67,7 @@ Mac Utils — нативное приложение в строке меню д�
 - [Политика безопасности](SECURITY.md)
 - [Известные ограничения](docs/KNOWN_LIMITATIONS.ru.md)
 - [Участие в разработке](CONTRIBUTING.md)
+- [Выпуск релизов](docs/RELEASING.ru.md)
 - [Правила поведения](CODE_OF_CONDUCT.md)
 - [Список изменений](CHANGELOG.md)
 - [Release notes v1.0.0](docs/releases/v1.0.0.ru.md)
@@ -83,7 +85,7 @@ Swift Package Manager — источник истины для модулей. `
 ./scripts/archive-xcode-local.sh app-store
 ```
 
-Для генерации проекта нужен XcodeGen 2.46.0 или новее. Локальные команды архивирования намеренно отключают подпись; релизная подпись и notarization выполняются защищённым релизным процессом.
+Для генерации проекта нужен XcodeGen 2.46.0 или новее. Локальные команды архивирования используют identities из Keychain разработчика; публичная подпись и notarization выполняются через защищённые GitHub environments.
 
 Модули:
 

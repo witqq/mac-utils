@@ -49,6 +49,8 @@ Explain any environment-only check that cannot run. Do not call a partially pass
 
 `MacUtils-UI` activates the application and takes keyboard focus. Run that scheme only in a dedicated macOS login session, virtual machine, or CI runner where it cannot interrupt a person. A BetterDisplay virtual screen can hide windows, but it does not isolate global keyboard focus.
 
+Release operators must follow [Release operations](docs/RELEASING.md). Credentials belong only in protected GitHub Environment Secrets; pull-request jobs never receive signing or App Store credentials.
+
 ### Pull requests
 
 Keep commits logical and messages factual. A pull request should explain behavior, risk, verification, UI/localization impact, and screenshots when presentation changes. Accept the [Code of Conduct](CODE_OF_CONDUCT.md).
@@ -64,3 +66,5 @@ Keep commits logical and messages factual. A pull request should explain behavio
 Переиспользуйте `UtilityAction`, `StateProvider`, конструктор сценариев и общие controls. Добавляйте тесты, обновляйте оба каталога локализации и EN/RU документацию. При каждом изменении выпускаемой функции синхронно обновляйте [лендинг](website/README.md), оба языка, реальные скриншоты и затронутые метаданные App Store. DSL должен оставаться данными без произвольного выполнения. Hardware-проверки обязаны быть обратимыми.
 
 Перед pull request выполните команды из раздела **Verification**. В описании укажите поведение, риски, точные проверки, влияние на UI/локализацию и screenshots при визуальных изменениях. Схема `MacUtils-UI` активирует приложение и перехватывает клавиатурный фокус, поэтому запускайте её только в отдельной GUI-сессии macOS, виртуальной машине или CI runner. Виртуальный дисплей BetterDisplay скрывает окна, но не изолирует глобальный фокус клавиатуры.
+
+Операторы релиза следуют документу [Выпуск релизов](docs/RELEASING.ru.md). Credentials хранятся только в защищённых GitHub Environment Secrets; jobs pull request никогда их не получают.
