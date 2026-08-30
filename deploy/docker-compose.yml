@@ -1,0 +1,40 @@
+services:
+  site:
+    image: mac-utils-site:latest
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: mac-utils-site
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - traefik
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mac-utils.rule=Host(`mac-utils.witqq.dev`)"
+      - "traefik.http.routers.mac-utils.entrypoints=websecure"
+      - "traefik.http.routers.mac-utils.tls=true"
+      - "traefik.http.routers.mac-utils.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mac-utils.loadbalancer.server.port=4080"
+
+networks:
+  traefik:
+    external: true
+  monitoring:
+    external: true

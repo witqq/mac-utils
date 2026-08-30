@@ -1,0 +1,29 @@
+{
+  "serviceName": "mac-utils",
+  "dockerComposePath": "deploy/docker-compose.yml",
+  "dockerfile": "deploy/Dockerfile",
+  "buildContext": ".",
+  "platform": "linux/amd64",
+  "remoteDir": "/opt/mac-utils",
+  "imageName": "mac-utils-site",
+  "deploymentType": "build",
+  "excludePatterns": [
+    ".git",
+    ".build",
+    "agent_temp_files_local",
+    "deploy-logs",
+    "*.dmg",
+    "*.pkg",
+    "*.p8",
+    "*.p12"
+  ],
+  "healthCheck": {
+    "containerName": "mac-utils-site",
+    "timeout": 120,
+    "interval": 5
+  },
+  "rollback": {
+    "enabled": true,
+    "keepPreviousImage": true
+  }
+}
