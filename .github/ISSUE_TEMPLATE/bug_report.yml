@@ -1,0 +1,72 @@
+name: Bug report
+description: Report reproducible incorrect behavior in Mac Utils
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, signing files, private configuration, or a full system profile. Use the private security process for vulnerabilities.
+  - type: input
+    id: version
+    attributes:
+      label: Mac Utils version and build
+      placeholder: 1.0.0 (1)
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac model
+      placeholder: macOS 26.x, MacBook Pro …
+    validations:
+      required: true
+  - type: textarea
+    id: displays
+    attributes:
+      label: Display setup
+      description: List display models and starting main/extended/mirror roles. Redact UUIDs unless required.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result and exact error text
+    validations:
+      required: true
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Distribution channel
+      options:
+        - Development build
+        - GitHub DMG
+        - Mac App Store
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: I checked the known limitations and existing issues.
+          required: true
+        - label: I removed secrets and private data from this report.
+          required: true
