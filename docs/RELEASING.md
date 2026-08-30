@@ -12,14 +12,15 @@ The `github-release` environment permits tags matching `v*` plus protected `main
 
 - `DEVELOPER_ID_APPLICATION_P12_BASE64`: base64 of the exported Developer ID Application identity and private key;
 - `DEVELOPER_ID_APPLICATION_P12_PASSWORD`: the export password;
-- `APP_STORE_CONNECT_PRIVATE_KEY_BASE64`: base64 of the App Store Connect API `.p8` key;
+- `APP_STORE_CONNECT_PRIVATE_KEY_BASE64`: base64 of a Team App Store Connect API `.p8` key with the Developer role, scoped operationally to notarization;
 - `APP_STORE_CONNECT_KEY_ID` and `APP_STORE_CONNECT_ISSUER_ID`: identifiers for that API key.
 
 The `app-store` environment permits only the protected `main` branch, requires an owner review, and contains:
 
-- the same three App Store Connect API values, entered independently in this environment.
+- `APP_STORE_CONNECT_PRIVATE_KEY_BASE64`: base64 of a separate Team API key with the Admin role required by Xcode cloud-managed distribution signing;
+- `APP_STORE_CONNECT_KEY_ID` and `APP_STORE_CONNECT_ISSUER_ID`: identifiers for the Store API key.
 
-Use a Team App Store Connect key that can provision, manage, and upload the Mac Utils application; individual keys cannot authenticate `notarytool`. Export the Developer ID Application identity from Keychain Access as a password-protected `.p12`, base64-encode it locally, paste the value into the `github-release` environment, and remove the export afterward. GitHub-hosted runners decode credentials only under `RUNNER_TEMP`, import the Direct certificate into a temporary keychain, and delete both at the end of the job. The Store workflow uses the API key with Xcode cloud-managed Apple Distribution signing, so no Store certificate or private key is exported.
+Individual API keys cannot authenticate `notarytool`; both environments require Team keys. Keep the Developer-role notarization key and Admin-role Store key separate so the broader cloud-signing permission is unavailable to GitHub Release jobs. Export the Developer ID Application identity from Keychain Access as a password-protected `.p12`, base64-encode it locally, paste the value into the `github-release` environment, and remove the export afterward. GitHub-hosted runners decode credentials only under `RUNNER_TEMP`, import the Direct certificate into a temporary keychain, and delete both at the end of the job. The Store workflow uses its API key with Xcode cloud-managed Apple Distribution and Mac Installer Distribution signing, so no Store certificate or private key is exported.
 
 ## Pull-request checks
 
