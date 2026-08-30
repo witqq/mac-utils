@@ -1,3 +1,5 @@
+require_relative "app_store_distribution"
+
 default_platform(:mac)
 
 opt_out_usage
@@ -21,12 +23,7 @@ platform :mac do
     app = Spaceship::ConnectAPI::App.find(APP_IDENTIFIER)
     UI.user_error!("App Store Connect app #{APP_IDENTIFIER} was not found") unless app
 
-    territory_ids = Spaceship::ConnectAPI::Territory.all.map(&:id)
-    app.update(
-      attributes: { availableInNewTerritories: true },
-      app_price_tier_id: "0",
-      territory_ids: territory_ids
-    )
+    AppStoreDistribution.new(token: Spaceship::ConnectAPI.token).ensure_free_and_worldwide!(app.id)
 
     deliver(
       api_key: api_key,
@@ -42,7 +39,6 @@ platform :mac do
       submit_for_review: mode == "submit",
       automatic_release: true,
       phased_release: false,
-      price_tier: 0,
       primary_category: "Utilities",
       secondary_category: "Productivity",
       app_rating_config_path: "AppStore/age-rating.json",
