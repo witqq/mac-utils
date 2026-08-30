@@ -17,11 +17,9 @@ Environment `github-release` разрешает теги `v*` и защищён�
 
 Environment `app-store` разрешает только защищённую ветку `main`, требует подтверждения владельца и содержит:
 
-- `APPLE_DISTRIBUTION_P12_BASE64` — base64 identity Apple Distribution с закрытым ключом;
-- `APPLE_DISTRIBUTION_P12_PASSWORD` — пароль экспорта;
 - те же три значения App Store Connect API, отдельно введённые в этот environment.
 
-Используйте App Store Connect key с минимальной ролью, достаточной для управления и загрузки Mac Utils. Экспортируйте каждый сертификат из Keychain Access в защищённый паролем `.p12`, локально преобразуйте его в base64, вставьте значение в соответствующий GitHub Environment Secret и удалите экспорт. GitHub-hosted runner декодирует credentials только в `RUNNER_TEMP`, импортирует сертификат во временный keychain и удаляет оба после job.
+Используйте Team App Store Connect key с правами на provisioning, управление и загрузку Mac Utils; individual key не может аутентифицировать `notarytool`. Экспортируйте identity Developer ID Application из Keychain Access в защищённый паролем `.p12`, локально преобразуйте его в base64, вставьте значение в environment `github-release` и удалите экспорт. GitHub-hosted runner декодирует credentials только в `RUNNER_TEMP`, импортирует Direct-сертификат во временный keychain и удаляет оба после job. Store workflow использует API key и cloud-managed Apple Distribution signing Xcode, поэтому экспорт Store-сертификата и его закрытого ключа не нужен.
 
 ## Проверки pull request
 
