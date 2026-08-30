@@ -1,0 +1,62 @@
+default_platform(:mac)
+
+opt_out_usage
+
+APP_IDENTIFIER = "com.witqq.mac-utils"
+
+platform :mac do
+  desc "Synchronize App Store metadata or submit an uploaded build for review"
+  lane :store_metadata do
+    mode = ENV.fetch("APP_STORE_MODE")
+    UI.user_error!("APP_STORE_MODE must be sync or submit") unless %w[sync submit].include?(mode)
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
+      issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
+      key_filepath: ENV.fetch("APP_STORE_CONNECT_KEY_PATH"),
+      duration: 1_200,
+      in_house: false
+    )
+
+    app = Spaceship::ConnectAPI::App.find(APP_IDENTIFIER)
+    UI.user_error!("App Store Connect app #{APP_IDENTIFIER} was not found") unless app
+
+    territory_ids = Spaceship::ConnectAPI::Territory.all.map(&:id)
+    app.update(
+      attributes: { availableInNewTerritories: true },
+      app_price_tier_id: "0",
+      territory_ids: territory_ids
+    )
+
+    deliver(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      app_version: ENV.fetch("RELEASE_VERSION"),
+      build_number: ENV.fetch("RELEASE_BUILD"),
+      platform: "osx",
+      metadata_path: "AppStore/metadata",
+      screenshots_path: ENV.fetch("APP_STORE_SCREENSHOTS_PATH"),
+      skip_binary_upload: true,
+      force: true,
+      overwrite_screenshots: true,
+      submit_for_review: mode == "submit",
+      automatic_release: true,
+      phased_release: false,
+      price_tier: 0,
+      primary_category: "Utilities",
+      secondary_category: "Productivity",
+      app_rating_config_path: "AppStore/age-rating.json",
+      app_review_information: {
+        first_name: "Mikhail",
+        last_name: "Belyi",
+        phone_number: "+79082767503",
+        email_address: "belyiwork@mail.ru",
+        notes: File.read("AppStore/review-notes.md", encoding: "UTF-8")
+      },
+      submission_information: {
+        export_compliance_uses_encryption: false,
+        content_rights_contains_third_party_content: false
+      }
+    )
+  end
+end

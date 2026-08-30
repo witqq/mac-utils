@@ -2,7 +2,7 @@
 
 [Русская версия](RELEASING.ru.md)
 
-Mac Utils uses three GitHub Actions workflows. [CI](../.github/workflows/ci.yml) checks every pull request and push to `main`. [GitHub Release](../.github/workflows/release.yml) publishes signed Direct builds from immutable `vMAJOR.MINOR.PATCH` tags. [App Store](../.github/workflows/app-store.yml) is a manual, protected validation/upload path for the same marketing version and build number.
+Mac Utils uses four GitHub Actions workflows. [CI](../.github/workflows/ci.yml) checks every pull request and push to `main`. [GitHub Release](../.github/workflows/release.yml) publishes signed Direct builds from immutable `vMAJOR.MINOR.PATCH` tags. [App Store](../.github/workflows/app-store.yml) validates and uploads the Store binary. [App Store Metadata](../.github/workflows/app-store-metadata.yml) synchronizes the product page and optionally submits an uploaded build for review.
 
 ## Protected environments and credentials
 
@@ -58,6 +58,18 @@ Open **Actions → App Store → Run workflow** on `main`, enter the marketing v
 
 The GitHub release and Store submission for v1.0.0 both use marketing version `1.0.0` and build `1`. A later Store retry that changes executable content must increment `CURRENT_PROJECT_VERSION` and use that new build number everywhere.
 
+After Apple finishes processing the upload, install the build from internal TestFlight on a two-display Mac and repeat the review path in `AppStore/review-notes.md`. Confirm that the menu bar app launches, Settings opens, a mirror/extend state toggle saves, and its global shortcut runs while another app is active. Do not submit a build that has not passed this hardware smoke test.
+
+## Synchronize metadata and submit for review
+
+Open **Actions → App Store Metadata → Run workflow** on `main`, enter the already uploaded version and build, and choose `sync`. Approve the protected `app-store` deployment. The workflow uses Fastlane 2.238.0 under Ruby 3.4.10 to synchronize both localizations, all eight screenshots, the free price, worldwide availability, Utilities/Productivity categories, the age-rating declaration, review contact and notes, automatic release after approval, and export/content-rights declarations. It selects the build only when `submit` is requested.
+
+Apple does not expose the app privacy questionnaire through the App Store Connect API. Before the first submission, open **App Privacy**, choose **No, we do not collect data from this app**, save, and publish that answer. The versioned source of truth is `AppStore/app-privacy.json`; update the website, this declaration, and the published App Store answer together if data practices change.
+
+App Store distribution also requires an account-level Digital Services Act trader/non-trader declaration. The account holder must make that legal self-assessment under **Business → Agreements → Compliance** and, if necessary, set the app-specific status under **App Information → App Store Regulations and Permits**. Automation intentionally does not infer or change this legal status.
+
+Review the synchronized product page and processed build, then rerun **App Store Metadata** with `submit`. The workflow resynchronizes the editable data, selects the exact version/build, creates the review submission, and requests automatic release after approval. A successful workflow ends when Apple accepts the submission into its review queue; the later review decision and public Store propagation are external Apple states.
+
 ## Audit after a run
 
-Confirm that every required job is green, the release has exactly the DMG and checksum, and the Store job reports successful validation or upload. Inspect logs for unexpected command tracing or credential material. GitHub redaction is a fallback, not permission to print a secret. Rotate an API key or certificate immediately if its value appears outside the protected secret store.
+Confirm that every required job is green, the release has exactly the DMG and checksum, the binary workflow reports successful validation/upload, and the metadata workflow reports synchronization or submission of the intended version/build. Inspect logs for unexpected command tracing or credential material. GitHub redaction is a fallback, not permission to print a secret. Rotate an API key or certificate immediately if its value appears outside the protected secret store.

@@ -43,6 +43,18 @@ jobs:
           ./scripts/check-docs.sh
           ./scripts/check-release-assets.sh
 
+      - name: Set up Ruby 3.4.10 for release automation
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: "3.4.10"
+          bundler-cache: true
+
+      - name: Verify Fastlane configuration
+        env:
+          FASTLANE_OPT_OUT_USAGE: "1"
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+        run: bundle exec fastlane lanes
+
       - name: Run Swift package tests
         run: ./scripts/test.sh
 

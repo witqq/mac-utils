@@ -1,0 +1,80 @@
+name: App Store Metadata
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Marketing version already uploaded to App Store Connect
+        required: true
+        default: "1.0.0"
+        type: string
+      build:
+        description: Processed App Store build number
+        required: true
+        default: "1"
+        type: string
+      mode:
+        description: Synchronize editable data or synchronize and submit for review
+        required: true
+        default: sync
+        type: choice
+        options:
+          - sync
+          - submit
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-store-metadata-${{ inputs.version }}-${{ inputs.build }}
+  cancel-in-progress: false
+
+jobs:
+  metadata:
+    name: Synchronize metadata and optionally submit
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: app-store
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_BUILD: ${{ inputs.build }}
+      APP_STORE_MODE: ${{ inputs.mode }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      FASTLANE_OPT_OUT_USAGE: "1"
+      FASTLANE_SKIP_UPDATE_CHECK: "1"
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Ruby 3.4.10
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: "3.4.10"
+          bundler-cache: true
+
+      - name: Validate version, build, and metadata
+        run: |
+          ./scripts/verify-release-version.sh "v$RELEASE_VERSION" >/dev/null
+          [[ "$RELEASE_BUILD" =~ ^[1-9][0-9]*$ ]]
+          [[ "$APP_STORE_MODE" == "sync" || "$APP_STORE_MODE" == "submit" ]]
+          ./scripts/check-release-assets.sh
+
+      - name: Prepare protected App Store Connect credentials
+        run: ./scripts/write-app-store-connect-key.sh
+
+      - name: Stage localized screenshots
+        run: |
+          screenshot_root="$RUNNER_TEMP/app-store-screenshots"
+          mkdir -p "$screenshot_root/en-US" "$screenshot_root/ru"
+          cp Assets/Screenshots/app-store/en/*.png "$screenshot_root/en-US/"
+          cp Assets/Screenshots/app-store/ru/*.png "$screenshot_root/ru/"
+          printf 'APP_STORE_SCREENSHOTS_PATH=%s\n' "$screenshot_root" >> "$GITHUB_ENV"
+
+      - name: Synchronize App Store Connect
+        run: bundle exec fastlane mac store_metadata
+
+      - name: Remove ephemeral credentials
+        if: always()
+        run: rm -f "${APP_STORE_CONNECT_KEY_PATH:-}"
