@@ -5,6 +5,7 @@
 "language.help" = "Использовать язык macOS автоматически или выбрать язык только для Mac Utils.";
 
 "app.settings.title" = "Настройки Mac Utils";
+"tab.general" = "Основные";
 "tab.scripts" = "Сценарии";
 "tab.shortcuts" = "Горячие клавиши";
 "tab.help" = "Справка";
@@ -21,6 +22,21 @@
 "menu.extend.help" = "Добавить дисплей как отдельное пространство рабочего стола вместо зеркалирования.";
 "menu.mirror.help" = "Показывать то же содержимое, что и на другом дисплее.";
 "message.dismiss" = "Закрыть сообщение";
+
+"general.title" = "Основные";
+"general.description" = "Настройте запуск Mac Utils и проверьте состояние, которое сейчас использует macOS.";
+"general.loginItem.title" = "Запускать Mac Utils при входе";
+"general.loginItem.description" = "Автоматически запускает приложение в строке меню после входа в учётную запись на этом Mac. Mac Utils меняет настройку только при переключении этого тумблера.";
+"general.loginItem.help" = "Зарегистрировать или удалить Mac Utils в системной службе объектов входа macOS.";
+"general.loginItem.status.disabled" = "Автоматический запуск выключен.";
+"general.loginItem.status.enabled" = "Автоматический запуск включён.";
+"general.loginItem.status.requiresApproval" = "Требуется разрешение в Системных настройках.";
+"general.loginItem.status.notFound" = "macOS не нашла регистрацию приложения.";
+"general.loginItem.approval" = "Откройте «Объекты входа» и разрешите Mac Utils. После изменения системной настройки вернитесь сюда и нажмите «Обновить состояние».";
+"general.loginItem.openSettings" = "Открыть объекты входа…";
+"general.loginItem.openSettings.help" = "Открыть раздел «Основные → Объекты входа и расширения» в Системных настройках.";
+"general.loginItem.refresh" = "Обновить состояние";
+"general.loginItem.refresh.help" = "Повторно прочитать текущее состояние объектов входа из macOS.";
 
 "display.role.main" = "Основной";
 "display.role.extended" = "Расширенный";
@@ -135,6 +151,9 @@
 "status.display.mirrored" = "Выбранный дисплей теперь работает как зеркало.";
 "status.operationComplete" = "Операция выполнена.";
 "status.missingScript" = "Сценарий не найден";
+"status.loginItem.enabled" = "Mac Utils будет запускаться при входе в учётную запись.";
+"status.loginItem.disabled" = "Mac Utils больше не будет запускаться при входе в учётную запись.";
+"status.loginItem.requiresApproval" = "Разрешите Mac Utils в Системных настройках, чтобы завершить включение автозапуска.";
 
 "error.shortcut.scriptMissing" = "Сценарий %@ больше не существует.";
 "error.shortcut.conflict" = "Это сочетание уже назначено. Прежняя горячая клавиша продолжает работать.";
@@ -152,6 +171,9 @@
 "error.config.corrupt" = "Сохранённая конфигурация повреждена. Mac Utils безопасно запущен без сценариев. Подробности: %@";
 "error.config.fileAccess" = "Нет доступа к файлу конфигурации: %@";
 "error.config.invalid" = "Сохранённая конфигурация некорректна: %@";
+"error.loginItem.enable" = "macOS не смогла включить автоматический запуск: %@";
+"error.loginItem.disable" = "macOS не смогла выключить автоматический запуск: %@";
+"error.loginItem.notFound" = "macOS не нашла объект входа Mac Utils. Переместите приложение в папку «Программы», откройте его снова и повторите попытку.";
 "error.config.rollback" = "Изменение не удалось сохранить, поэтому прежняя горячая клавиша восстановлена. Подробности: %@";
 "error.transaction.rollbackFailed" = "Изменение завершилось ошибкой, и Mac Utils не смог полностью восстановить прежнее состояние. Перезапустите Mac Utils перед повторной попыткой. Исходная ошибка: %@. Ошибка восстановления: %@.";
 "error.script.diagnostic" = "Строка %d, столбец %d: %@";

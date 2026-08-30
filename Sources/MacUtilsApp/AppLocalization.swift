@@ -158,6 +158,11 @@ struct AppText: Sendable {
             }
         case let error as ConfigurationValidationError:
             format("error.config.invalid", String(describing: error))
+        case let error as LoginItemManagementError:
+            switch error {
+            case let .registrationFailed(message): format("error.loginItem.enable", message)
+            case let .unregistrationFailed(message): format("error.loginItem.disable", message)
+            }
         case let diagnostic as ScriptDiagnostic:
             format("error.script.diagnostic", diagnostic.line, diagnostic.column, scriptReason(diagnostic.reason))
         case let error as ScenarioBuilderError:

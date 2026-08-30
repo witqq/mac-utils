@@ -39,6 +39,7 @@ for capture_spec in \
   capture "$language" "$locale" "$fixture" 02-shortcuts --skip-onboarding --settings-tab shortcuts
   capture "$language" "$locale" "$fixture" 03-help --skip-onboarding --settings-tab help
   capture "$language" "$locale" "$fixture" 04-onboarding --show-onboarding --settings-tab scripts
+  capture "$language" "$locale" "$fixture" 05-general --skip-onboarding --settings-tab general
 done
 
 "$repo_root/scripts/compose-marketing-assets.sh"

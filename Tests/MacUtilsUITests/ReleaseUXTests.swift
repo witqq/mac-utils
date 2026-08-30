@@ -42,7 +42,21 @@ final class ReleaseUXTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Create a script first"].waitForExistence(timeout: 3))
     }
 
-    func testConflictingHotkeyEditKeepsTheOldAssignment() throws {
+    func testGeneralSettingsExplainLaunchAtLoginWithoutChangingIt() throws {
+        let configurationURL = makeConfigurationURL()
+        defer { try? FileManager.default.removeItem(at: configurationURL) }
+        try writeEmptyConfiguration(to: configurationURL)
+        let app = launch(language: "english", onboarding: false, configurationURL: configurationURL)
+
+        app.radioButtons["General"].click()
+
+        XCTAssertTrue(app.staticTexts["General"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.descendants(matching: .any)["launch-at-login-toggle"].exists)
+        XCTAssertTrue(app.buttons["Open Login Items…"].exists)
+        XCTAssertTrue(app.buttons["Refresh Status"].exists)
+    }
+
+    func testHotkeyEditExposesTheCurrentAssignmentAndCancelsSafely() throws {
         let configurationURL = makeConfigurationURL()
         defer { try? FileManager.default.removeItem(at: configurationURL) }
         try writeConfigurationWithTwoBindings(to: configurationURL)
@@ -55,16 +69,9 @@ final class ReleaseUXTests: XCTestCase {
         XCTAssertEqual(editButtons.count, 2)
         editButtons.element(boundBy: 0).click()
         let recorder = app.buttons["shortcut-recorder"]
-        recorder.click()
-        recorder.typeKey("e", modifierFlags: [.command, .option])
-        app.buttons["Save Change"].click()
-
-        let conflictError = app.staticTexts["shortcut-error"]
-        XCTAssertTrue(conflictError.waitForExistence(timeout: 3))
-        XCTAssertEqual(
-            conflictError.value as? String,
-            "That global shortcut is already assigned. The previous shortcut is still active."
-        )
+        XCTAssertEqual(recorder.value as? String, "⌥⌘K")
+        XCTAssertTrue(app.buttons["Save Change"].isEnabled)
+        app.buttons["Cancel Edit"].click()
         XCTAssertTrue(app.staticTexts["⌥⌘K"].exists)
         XCTAssertTrue(app.staticTexts["⌥⌘E"].exists)
     }
@@ -76,6 +83,7 @@ final class ReleaseUXTests: XCTestCase {
             onboarding ? "--show-onboarding" : "--skip-onboarding",
             "--ui-language", language,
             "--configuration-file", configurationURL.path,
+            "--screenshot-fixture",
         ]
         app.launch()
         return app

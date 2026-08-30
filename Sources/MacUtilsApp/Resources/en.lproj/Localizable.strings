@@ -5,6 +5,7 @@
 "language.help" = "Use the Mac language automatically or override it for Mac Utils.";
 
 "app.settings.title" = "Mac Utils Settings";
+"tab.general" = "General";
 "tab.scripts" = "Scripts";
 "tab.shortcuts" = "Shortcuts";
 "tab.help" = "Help";
@@ -21,6 +22,21 @@
 "menu.extend.help" = "Use this display as additional desktop space instead of mirroring.";
 "menu.mirror.help" = "Show the same content as another display.";
 "message.dismiss" = "Dismiss message";
+
+"general.title" = "General";
+"general.description" = "Choose how Mac Utils starts and check the setting macOS is currently using.";
+"general.loginItem.title" = "Launch Mac Utils at login";
+"general.loginItem.description" = "Starts the menu bar app automatically after you sign in to this Mac. Mac Utils changes this setting only when you use this switch.";
+"general.loginItem.help" = "Register or unregister Mac Utils with the macOS Login Items service.";
+"general.loginItem.status.disabled" = "Automatic launch is off.";
+"general.loginItem.status.enabled" = "Automatic launch is on.";
+"general.loginItem.status.requiresApproval" = "Approval is required in System Settings.";
+"general.loginItem.status.notFound" = "macOS could not find the app registration.";
+"general.loginItem.approval" = "Open Login Items and allow Mac Utils. Return here and select Refresh Status after changing the system setting.";
+"general.loginItem.openSettings" = "Open Login Items…";
+"general.loginItem.openSettings.help" = "Open System Settings directly to General → Login Items & Extensions.";
+"general.loginItem.refresh" = "Refresh Status";
+"general.loginItem.refresh.help" = "Read the current Login Items status from macOS again.";
 
 "display.role.main" = "Main";
 "display.role.extended" = "Extended";
@@ -135,6 +151,9 @@
 "status.display.mirrored" = "The selected display is now mirrored.";
 "status.operationComplete" = "The operation completed.";
 "status.missingScript" = "Missing script";
+"status.loginItem.enabled" = "Mac Utils will launch when you log in.";
+"status.loginItem.disabled" = "Mac Utils will no longer launch when you log in.";
+"status.loginItem.requiresApproval" = "Allow Mac Utils in System Settings to finish enabling automatic launch.";
 
 "error.shortcut.scriptMissing" = "The script %@ no longer exists.";
 "error.shortcut.conflict" = "That global shortcut is already assigned. The previous shortcut is still active.";
@@ -152,6 +171,9 @@
 "error.config.corrupt" = "The saved configuration is damaged. Mac Utils started safely with no scripts. Details: %@";
 "error.config.fileAccess" = "The configuration file could not be accessed: %@";
 "error.config.invalid" = "The saved configuration is invalid: %@";
+"error.loginItem.enable" = "macOS could not enable automatic launch: %@";
+"error.loginItem.disable" = "macOS could not disable automatic launch: %@";
+"error.loginItem.notFound" = "macOS could not find the Mac Utils Login Item. Move the app to Applications, reopen it and try again.";
 "error.config.rollback" = "The change could not be saved, so the previous shortcut was restored. Details: %@";
 "error.transaction.rollbackFailed" = "The change failed and Mac Utils could not fully restore the previous runtime state. Restart Mac Utils before trying again. Original error: %@. Restore error: %@.";
 "error.script.diagnostic" = "Line %d, column %d: %@";

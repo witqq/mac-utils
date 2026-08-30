@@ -59,6 +59,18 @@ public actor ShortcutCoordinator {
         )
     }
 
+    /// Creates an isolated coordinator for deterministic UI and screenshot fixtures.
+    public static func inMemoryFixture(
+        registry: ActionRegistry,
+        stateProviders: StateProviderRegistry = StateProviderRegistry()
+    ) -> ShortcutCoordinator {
+        ShortcutCoordinator(
+            registrar: InMemoryHotKeyRegistrar(),
+            registry: registry,
+            stateProviders: stateProviders
+        )
+    }
+
     public func upsertScript(_ script: UserScript) throws {
         _ = try engine.compile(script.source, name: script.name)
         scripts[script.id] = script
@@ -126,5 +138,24 @@ public actor ShortcutCoordinator {
                 status: .failed(message: String(describing: error))
             )
         }
+    }
+}
+
+private actor InMemoryHotKeyRegistrar: GlobalHotKeyRegistering {
+    private var nextID: UInt32 = 1
+    private var registrations: Set<HotKeyRegistrationToken> = []
+
+    func register(
+        _ shortcut: GlobalShortcut,
+        handler: @escaping @Sendable () async -> Void
+    ) async throws -> HotKeyRegistrationToken {
+        let token = HotKeyRegistrationToken(rawValue: nextID)
+        nextID += 1
+        registrations.insert(token)
+        return token
+    }
+
+    func unregister(_ token: HotKeyRegistrationToken) async {
+        registrations.remove(token)
     }
 }
