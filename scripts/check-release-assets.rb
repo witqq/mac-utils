@@ -56,12 +56,54 @@ locales.each do |locale|
   end
 end
 
+json_files = {}
 %w[category.json app-privacy.json age-rating.json].each do |name|
   path = File.join(ROOT, "AppStore", name)
-  JSON.parse(File.read(path, encoding: "UTF-8"))
+  json_files[name] = JSON.parse(File.read(path, encoding: "UTF-8"))
 rescue Errno::ENOENT, JSON::ParserError => error
   errors << "Invalid #{path}: #{error.message}"
 end
+
+category = json_files["category.json"]
+errors << "App Store categories must be Utilities and Productivity" unless category == { "primary" => "Utilities", "secondary" => "Productivity" }
+
+privacy = json_files["app-privacy.json"]
+expected_privacy = {
+  "dataCollected" => false,
+  "tracking" => false,
+  "privacyPolicyURL" => "https://mac-utils.witqq.dev/#privacy",
+}
+errors << "App privacy declaration must state no collection/tracking and use the production privacy URL" unless privacy == expected_privacy
+
+rating = json_files["age-rating.json"]
+rating_enum_fields = %w[
+  alcoholTobaccoOrDrugUseOrReferences contests gamblingSimulated gunsOrOtherWeapons
+  horrorOrFearThemes matureOrSuggestiveThemes medicalOrTreatmentInformation
+  profanityOrCrudeHumor sexualContentGraphicAndNudity sexualContentOrNudity
+  violenceCartoonOrFantasy violenceRealistic violenceRealisticProlongedGraphicOrSadistic
+  ageRatingOverrideV2 koreaAgeRatingOverride
+]
+rating_boolean_fields = %w[
+  socialMedia socialMediaAgeRestricted advertising ageAssurance gambling healthOrWellnessTopics
+  lootBox messagingAndChat parentalControls unrestrictedWebAccess userGeneratedContent
+]
+rating_nullable_fields = %w[kidsAgeBand developerAgeRatingInfoUrl]
+expected_rating_fields = rating_enum_fields + rating_boolean_fields + rating_nullable_fields
+if rating
+  errors << "Age rating fields do not match the Fastlane 2.238.0 declaration" unless rating.keys.sort == expected_rating_fields.sort
+  rating_enum_fields.each { |field| errors << "Age rating #{field} must be NONE" unless rating[field] == "NONE" }
+  rating_boolean_fields.each { |field| errors << "Age rating #{field} must be false" unless rating[field] == false }
+  rating_nullable_fields.each { |field| errors << "Age rating #{field} must be null" unless rating[field].nil? }
+end
+
+review_notes = File.join(ROOT, "AppStore", "review-notes.md")
+errors << "App Review notes must contain the two-display review path" unless File.file?(review_notes) && value(review_notes).include?("Connect two displays")
+
+copyright = File.join(ROOT, "AppStore", "metadata", "copyright.txt")
+errors << "App Store copyright must identify the 2026 rights holder" unless File.file?(copyright) && value(copyright) == "2026 Mikhail Belyi"
+
+gemfile = File.join(ROOT, "Gemfile")
+errors << "Gemfile must pin Fastlane 2.238.0" unless File.file?(gemfile) && value(gemfile).include?('gem "fastlane", "2.238.0"')
 
 expected_icons = {
   "app-icon-16.png" => 16,

@@ -2,7 +2,7 @@
 
 [English version](RELEASING.md)
 
-Mac Utils использует три GitHub Actions workflow. [CI](../.github/workflows/ci.yml) проверяет каждый pull request и push в `main`. [GitHub Release](../.github/workflows/release.yml) публикует подписанные Direct-сборки из неизменяемых тегов `vMAJOR.MINOR.PATCH`. [App Store](../.github/workflows/app-store.yml) вручную и под защитой валидирует или загружает ту же маркетинговую версию и номер сборки.
+Mac Utils использует четыре GitHub Actions workflow. [CI](../.github/workflows/ci.yml) проверяет каждый pull request и push в `main`. [GitHub Release](../.github/workflows/release.yml) публикует подписанные Direct-сборки из неизменяемых тегов `vMAJOR.MINOR.PATCH`. [App Store](../.github/workflows/app-store.yml) валидирует и загружает Store binary. [App Store Metadata](../.github/workflows/app-store-metadata.yml) синхронизирует страницу продукта и при необходимости отправляет загруженную сборку на review.
 
 ## Защищённые environments и credentials
 
@@ -58,6 +58,18 @@ Release workflow отклоняет неверный или несовпадаю
 
 GitHub release и Store submission для v1.0.0 используют маркетинговую версию `1.0.0` и build `1`. Если последующая Store-сборка меняет исполняемый файл, увеличьте `CURRENT_PROJECT_VERSION` и используйте новый номер во всех местах.
 
+Когда Apple закончит обработку upload, установите build из внутреннего TestFlight на Mac с двумя дисплеями и повторите путь для reviewer из `AppStore/review-notes.md`. Проверьте запуск menu bar app, открытие Settings, сохранение state-based mirror/extend toggle и срабатывание его глобального shortcut поверх другого приложения. Не отправляйте build, который не прошёл этот hardware smoke test.
+
+## Синхронизация metadata и отправка на review
+
+Откройте **Actions → App Store Metadata → Run workflow** на `main`, укажите уже загруженные version и build и выберите `sync`. Подтвердите защищённый deployment `app-store`. Workflow использует Fastlane 2.238.0 и Ruby 3.4.10 для синхронизации двух локализаций, всех восьми screenshots, бесплатной цены, доступности во всех регионах, категорий Utilities/Productivity, age-rating declaration, контакта и заметок для review, автоматического выпуска после одобрения и declarations об encryption/content rights. Build выбирается только в режиме `submit`.
+
+Apple не предоставляет анкету App Privacy через App Store Connect API. Перед первой отправкой откройте **App Privacy**, выберите **No, we do not collect data from this app**, сохраните и опубликуйте ответ. Версионируемый источник истины — `AppStore/app-privacy.json`; при изменении практик работы с данными одновременно обновляйте сайт, этот declaration и опубликованный ответ App Store.
+
+Для распространения в App Store также требуется account-level declaration статуса trader/non-trader по Digital Services Act. Account holder должен самостоятельно выполнить юридическую самооценку в **Business → Agreements → Compliance** и при необходимости указать app-specific status в **App Information → App Store Regulations and Permits**. Автоматизация намеренно не выбирает и не меняет этот юридический статус.
+
+Проверьте синхронизированную страницу продукта и обработанный build, затем повторно запустите **App Store Metadata** в режиме `submit`. Workflow ещё раз синхронизирует редактируемые данные, выберет точные version/build, создаст review submission и запросит автоматический выпуск после одобрения. Успешный workflow заканчивается, когда Apple принимает submission в очередь review; последующее решение reviewer и появление продукта в Store — внешние состояния Apple.
+
 ## Аудит после запуска
 
-Убедитесь, что все обязательные jobs зелёные, release содержит ровно DMG и checksum, а Store job сообщает об успешной validation или upload. Проверьте логи на неожиданную трассировку команд и credential material. Маскирование GitHub — запасная защита, а не разрешение печатать secret. Если API key или сертификат появился вне защищённого хранилища, немедленно замените его.
+Убедитесь, что все обязательные jobs зелёные, release содержит ровно DMG и checksum, binary workflow сообщает об успешной validation/upload, а metadata workflow — о синхронизации или submission нужных version/build. Проверьте логи на неожиданную трассировку команд и credential material. Маскирование GitHub — запасная защита, а не разрешение печатать secret. Если API key или сертификат появился вне защищённого хранилища, немедленно замените его.
