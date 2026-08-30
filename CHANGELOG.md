@@ -4,9 +4,9 @@ All notable public changes to Mac Utils are recorded here.
 
 ## Unreleased
 
-- Release signing, notarized DMG publication, App Store submission, and public website deployment are pending.
+- No unreleased changes.
 
-## 1.0.0 — release candidate
+## 1.0.0 — 2026-08-30
 
 ### Added
 
@@ -29,4 +29,4 @@ All notable public changes to Mac Utils are recorded here.
 - No analytics, ads, accounts, network client, or developer backend.
 - Direct and App Store entitlements are separated; App Store uses App Sandbox.
 
-The release candidate is not a published release. See [v1.0.0 release notes](docs/releases/v1.0.0.md).
+See [v1.0.0 release notes](docs/releases/v1.0.0.md) and the [signed GitHub release](https://github.com/witqq/mac-utils/releases/tag/v1.0.0).

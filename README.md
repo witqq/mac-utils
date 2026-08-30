@@ -14,11 +14,11 @@ Mac Utils is a native menu bar application for building dependable macOS utility
 Mac Utils requires macOS 26 or later.
 
 - **Source and issues:** [github.com/witqq/mac-utils](https://github.com/witqq/mac-utils) is the public project repository.
-- **GitHub Releases:** the notarized DMG will be published with v1.0.0 on the repository’s [Releases page](https://github.com/witqq/mac-utils/releases). The first public release is not available yet.
+- **GitHub Releases:** download the notarized v1.0.0 DMG and its SHA-256 checksum from the [v1.0.0 release](https://github.com/witqq/mac-utils/releases/tag/v1.0.0).
 - **Mac App Store:** the product link will be added after Apple publishes v1.0.0.
 - **Website and support:** `https://mac-utils.witqq.dev` is the canonical address being prepared for the first release.
 
-The release download, App Store product, and website remain marked as pending until their publication steps complete. Development builds are available from this repository.
+The Mac App Store product and website remain marked as pending until their publication steps complete. Development builds are available from this repository.
 
 ## What it does
 
