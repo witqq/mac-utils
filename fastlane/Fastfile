@@ -41,6 +41,7 @@ platform :mac do
       force: true,
       overwrite_screenshots: true,
       submit_for_review: mode == "submit",
+      precheck_include_in_app_purchases: false,
       automatic_release: true,
       phased_release: false,
       primary_category: "Utilities",

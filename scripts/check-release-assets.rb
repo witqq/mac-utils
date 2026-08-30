@@ -105,6 +105,9 @@ errors << "App Store copyright must identify the 2026 rights holder" unless File
 gemfile = File.join(ROOT, "Gemfile")
 errors << "Gemfile must pin Fastlane 2.238.0" unless File.file?(gemfile) && value(gemfile).include?('gem "fastlane", "2.238.0"')
 
+fastfile = File.join(ROOT, "fastlane", "Fastfile")
+errors << "Fastlane API-key precheck must exclude unsupported in-app purchase lookup" unless File.file?(fastfile) && value(fastfile).include?("precheck_include_in_app_purchases: false")
+
 expected_icons = {
   "app-icon-16.png" => 16,
   "app-icon-32.png" => 32,
