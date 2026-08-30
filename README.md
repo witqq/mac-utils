@@ -16,9 +16,9 @@ Mac Utils requires macOS 26 or later.
 - **Source and issues:** [github.com/witqq/mac-utils](https://github.com/witqq/mac-utils) is the public project repository.
 - **GitHub Releases:** download the notarized v1.0.0 DMG and its SHA-256 checksum from the [v1.0.0 release](https://github.com/witqq/mac-utils/releases/tag/v1.0.0).
 - **Mac App Store:** the product link will be added after Apple publishes v1.0.0.
-- **Website and support:** `https://mac-utils.witqq.dev` is the canonical address being prepared for the first release.
+- **Website and support:** [mac-utils.witqq.dev](https://mac-utils.witqq.dev) is the canonical marketing and support address.
 
-The Mac App Store product and website remain marked as pending until their publication steps complete. Development builds are available from this repository.
+The Mac App Store product remains marked as pending until Apple publication completes. Development builds are available from this repository.
 
 ## What it does
 

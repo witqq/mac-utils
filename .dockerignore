@@ -1,0 +1,6 @@
+*
+!.dockerignore
+!deploy/
+!deploy/**
+!website/
+!website/**
