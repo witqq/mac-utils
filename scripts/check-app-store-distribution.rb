@@ -6,11 +6,11 @@ require_relative "../fastlane/app_store_distribution"
 class FakeDistribution < AppStoreDistribution
   attr_reader :requests
 
-  def initialize
+  def initialize(existing_price_schedule: false)
     super(token: Object.new, api_root: "https://example.test")
     @requests = []
     @availability_created = false
-    @schedule_created = false
+    @schedule_state = existing_price_schedule ? :paid : :missing
     @territory_reads = 0
   end
 
@@ -37,18 +37,27 @@ class FakeDistribution < AppStoreDistribution
     when ["Net::HTTP::Patch", "/v1/territoryAvailabilities/availability-can"]
       { "data" => body.fetch(:data) }
     when ["Net::HTTP::Get", "/v1/apps/app-id/appPriceSchedule"]
-      raise APIError.new(404, "errors" => []) unless @schedule_created
+      raise APIError.new(404, "errors" => []) if @schedule_state == :missing
 
       { "data" => { "type" => "appPriceSchedules", "id" => "schedule-id" } }
     when ["Net::HTTP::Get", "/v1/apps/app-id/appPricePoints"]
       collection([{ "type" => "appPricePoints", "id" => "free-point", "attributes" => { "customerPrice" => "0.00" } }])
     when ["Net::HTTP::Post", "/v1/appPriceSchedules"]
-      @schedule_created = true
+      @schedule_state = :free
       { "data" => { "type" => "appPriceSchedules", "id" => "schedule-id" } }
     when ["Net::HTTP::Get", "/v1/appPriceSchedules/schedule-id/manualPrices"]
+      price_point_id = @schedule_state == :free ? "free-point" : "paid-point"
+      customer_price = @schedule_state == :free ? "0.00" : "4.99"
       {
-        "data" => [],
-        "included" => [{ "type" => "appPricePoints", "id" => "free-point", "attributes" => { "customerPrice" => "0.00" } }]
+        "data" => [
+          {
+            "type" => "appPrices",
+            "id" => "active-price",
+            "attributes" => { "startDate" => nil, "endDate" => nil },
+            "relationships" => { "appPricePoint" => { "data" => { "type" => "appPricePoints", "id" => price_point_id } } }
+          }
+        ],
+        "included" => [{ "type" => "appPricePoints", "id" => price_point_id, "attributes" => { "customerPrice" => customer_price } }]
       }
     else
       raise "Unexpected request #{request_class.name} #{request_uri}"
@@ -87,3 +96,11 @@ price_payload = price_create.fetch(2)
 raise "Free price point was not selected" unless price_payload.dig(:included, 0, :relationships, :appPricePoint, :data, :id) == "free-point"
 
 puts "Modern App Store distribution client valid: free price, all territories, and post-write verification."
+
+existing_schedule = FakeDistribution.new(existing_price_schedule: true)
+existing_schedule.ensure_free_and_worldwide!("app-id")
+price_change = existing_schedule.requests.find { |method, path, _| method == "Net::HTTP::Post" && path == "/v1/appPriceSchedules" }
+raise "Existing paid schedule was not changed" unless price_change
+raise "Existing schedule change must start today" unless price_change.dig(2, :included, 0, :attributes, :startDate) == Date.today.iso8601
+
+puts "Existing paid App Store schedule valid: immediate free price change and active-price verification."
