@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing immutable vMAJOR.MINOR.PATCH tag to rebuild
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -21,7 +27,7 @@ jobs:
     permissions:
       contents: write
     env:
-      RELEASE_TAG: ${{ github.ref_name }}
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
       APPLE_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64 }}
       APPLE_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_PASSWORD }}
       APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
@@ -32,6 +38,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Select Xcode 26.3
         run: sudo xcode-select --switch /Applications/Xcode_26.3.app
@@ -45,8 +52,8 @@ jobs:
           git merge-base --is-ancestor HEAD origin/main
           version="$(./scripts/verify-release-version.sh "$RELEASE_TAG")"
           build="$(ruby -e 'text = File.read("project.yml"); match = text.match(/^\s*CURRENT_PROJECT_VERSION:\s*"([^"]+)"\s*$/); abort "CURRENT_PROJECT_VERSION not found" unless match; puts match[1]')"
-          print "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
-          print "RELEASE_BUILD=$build" >> "$GITHUB_ENV"
+          printf 'RELEASE_VERSION=%s\n' "$version" >> "$GITHUB_ENV"
+          printf 'RELEASE_BUILD=%s\n' "$build" >> "$GITHUB_ENV"
 
       - name: Prepare protected signing credentials
         run: |
@@ -86,8 +93,8 @@ jobs:
           test "$(defaults read "$app_path/Contents/Info" CFBundleVersion)" = "$RELEASE_BUILD"
           architectures="$(lipo -archs "$app_path/Contents/MacOS/Mac Utils")"
           [[ "$architectures" == *arm64* && "$architectures" == *x86_64* ]]
-          print "RELEASE_APP_PATH=$app_path" >> "$GITHUB_ENV"
-          print "RELEASE_OUTPUT_ROOT=$output_root" >> "$GITHUB_ENV"
+          printf 'RELEASE_APP_PATH=%s\n' "$app_path" >> "$GITHUB_ENV"
+          printf 'RELEASE_OUTPUT_ROOT=%s\n' "$output_root" >> "$GITHUB_ENV"
 
       - name: Build, notarize, and verify the DMG
         run: |
@@ -97,7 +104,7 @@ jobs:
             --key "$APP_STORE_CONNECT_KEY_PATH" \
             --key-id "$APP_STORE_CONNECT_KEY_ID" \
             --issuer "$APP_STORE_CONNECT_ISSUER_ID"
-          print "RELEASE_DMG_PATH=$dmg_path" >> "$GITHUB_ENV"
+          printf 'RELEASE_DMG_PATH=%s\n' "$dmg_path" >> "$GITHUB_ENV"
 
       - name: Create or update the GitHub Release
         env:
