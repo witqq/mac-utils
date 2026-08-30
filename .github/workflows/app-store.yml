@@ -39,8 +39,6 @@ jobs:
       RELEASE_VERSION: ${{ inputs.version }}
       RELEASE_BUILD: ${{ inputs.build }}
       SUBMISSION: ${{ inputs.submission }}
-      APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_P12_BASE64 }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_P12_PASSWORD }}
       APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
@@ -60,10 +58,8 @@ jobs:
           [[ "$RELEASE_BUILD" =~ ^[1-9][0-9]*$ ]]
           [[ "$SUBMISSION" == "validate" || "$SUBMISSION" == "upload" ]]
 
-      - name: Prepare protected distribution credentials
-        run: |
-          ./scripts/install-apple-certificate.sh
-          ./scripts/write-app-store-connect-key.sh
+      - name: Prepare protected App Store Connect credentials
+        run: ./scripts/write-app-store-connect-key.sh
 
       - name: Create and export the App Store archive
         run: |

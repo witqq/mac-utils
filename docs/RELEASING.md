@@ -17,11 +17,9 @@ The `github-release` environment permits tags matching `v*` plus protected `main
 
 The `app-store` environment permits only the protected `main` branch, requires an owner review, and contains:
 
-- `APPLE_DISTRIBUTION_P12_BASE64`: base64 of the Apple Distribution identity and private key;
-- `APPLE_DISTRIBUTION_P12_PASSWORD`: the export password;
 - the same three App Store Connect API values, entered independently in this environment.
 
-Use a narrowly scoped App Store Connect key that can manage and upload the Mac Utils application. Export each certificate from Keychain Access as a password-protected `.p12`, base64-encode it locally, paste the value into the corresponding GitHub environment secret, and remove the export afterward. GitHub-hosted runners decode credentials only under `RUNNER_TEMP`, import certificates into a temporary keychain, and delete both at the end of the job.
+Use a Team App Store Connect key that can provision, manage, and upload the Mac Utils application; individual keys cannot authenticate `notarytool`. Export the Developer ID Application identity from Keychain Access as a password-protected `.p12`, base64-encode it locally, paste the value into the `github-release` environment, and remove the export afterward. GitHub-hosted runners decode credentials only under `RUNNER_TEMP`, import the Direct certificate into a temporary keychain, and delete both at the end of the job. The Store workflow uses the API key with Xcode cloud-managed Apple Distribution signing, so no Store certificate or private key is exported.
 
 ## Pull-request checks
 
