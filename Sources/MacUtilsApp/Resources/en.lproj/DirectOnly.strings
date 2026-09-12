@@ -1,0 +1,7 @@
+"action.refresh-universal-control.name" = "Refresh Universal Control";
+"action.refresh-universal-control.description" = "Restarts local Continuity services so Universal Control can reconnect. Direct builds only.";
+"action.dismiss-notifications.name" = "Dismiss all notifications";
+"action.dismiss-notifications.description" = "Closes every visible Notification Center banner and alert, including stacked groups. Requires Accessibility access. Direct builds only.";
+"error.notifications.accessibility" = "Mac Utils needs Accessibility access to close notifications. Allow Mac Utils in System Settings → Privacy & Security → Accessibility and run the action again.";
+"error.notifications.notRunning" = "Notification Center is not running, so there are no notifications to close.";
+"error.notifications.actionFailed" = "Notification Center rejected the ‘%@’ action (accessibility status %d).";

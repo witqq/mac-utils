@@ -128,7 +128,7 @@
 "help.safety.body" = "Mac Utils scripts can only call registered actions. They cannot run shell commands, open arbitrary files or execute downloaded code.";
 
 "onboarding.title" = "Welcome to Mac Utils";
-"onboarding.subtitle" = "Build dependable display shortcuts without writing code.";
+"onboarding.subtitle" = "Turn ready-made actions into scripts and run them with one global shortcut.";
 "onboarding.visual.title" = "Build visually";
 "onboarding.visual.body" = "Stack display actions and state-based branches with menus and controls.";
 "onboarding.hotkey.title" = "Run from anywhere";
@@ -246,3 +246,16 @@
 "provider.display.mode.option.main" = "Main";
 "provider.display.mode.option.extended" = "Extended";
 "provider.display.mode.option.mirror" = "Mirror";
+
+"menu.quit" = "Quit %@";
+"menu.edit" = "Edit";
+"menu.undo" = "Undo";
+"menu.redo" = "Redo";
+"menu.cut" = "Cut";
+"menu.copy" = "Copy";
+"menu.paste" = "Paste";
+"menu.selectAll" = "Select All";
+"menu.window" = "Window";
+"menu.closeWindow" = "Close Window";
+"menu.minimize" = "Minimize";
+"menu.zoom" = "Zoom";

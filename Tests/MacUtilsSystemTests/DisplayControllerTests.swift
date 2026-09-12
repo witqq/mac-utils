@@ -5,6 +5,7 @@ import Testing
 private actor FakeDisplayDriver: DisplayConfigurationDriver {
     private var current: [DisplayDescriptor]
     private(set) var appliedBatches: [[DisplayConfigurationOperation]] = []
+    private(set) var restoredModeDisplays: [DisplayID] = []
     private var failNextApply = false
 
     init(displays: [DisplayDescriptor]) {
@@ -48,6 +49,11 @@ private actor FakeDisplayDriver: DisplayConfigurationDriver {
                 } else {
                     candidate[index].role = .extended
                 }
+            case let .restoreDefaultMode(display):
+                guard candidate.contains(where: { $0.id == display }) else {
+                    throw DisplayManagerError.displayNotFound(display)
+                }
+                restoredModeDisplays.append(display)
             }
         }
 
@@ -125,7 +131,74 @@ func mirrorAndExtendUseOneAtomicBatchEach() async throws {
     #expect(extended?.role == .extended)
     #expect(extended?.frame.x == 1920)
     #expect(await driver.appliedBatches.count == 2)
-    #expect(await driver.appliedBatches[1].count == 2)
+    #expect(await driver.appliedBatches[1] == [
+        .setMirror(display: rightID, source: nil),
+        .restoreDefaultMode(display: rightID),
+        .setOrigin(display: rightID, x: 1920, y: 0),
+    ])
+}
+
+@Test
+func extendingAMirroredDisplayRestoresItsOwnModeBeforeMovingIt() async throws {
+    let driver = FakeDisplayDriver(displays: threeDisplays())
+    let controller = DisplayController(driver: driver)
+    try await controller.setMirrorDisplay(rightID, source: mainID)
+
+    try await controller.setExtendedDisplay(rightID)
+
+    let batch = await driver.appliedBatches[1]
+    let restoreIndex = try #require(batch.firstIndex(of: .restoreDefaultMode(display: rightID)))
+    let originIndex = try #require(batch.firstIndex(of: .setOrigin(display: rightID, x: 1920, y: 0)))
+    #expect(batch.first == .setMirror(display: rightID, source: nil))
+    #expect(restoreIndex < originIndex)
+    #expect(await driver.restoredModeDisplays == [rightID])
+}
+
+@Test
+func makingAMirroredDisplayMainRestoresItsOwnModeBeforeTheLayoutMoves() async throws {
+    let driver = FakeDisplayDriver(displays: threeDisplays())
+    let controller = DisplayController(driver: driver)
+    try await controller.setMirrorDisplay(rightID, source: mainID)
+
+    try await controller.setMainDisplay(rightID)
+
+    let batch = await driver.appliedBatches[1]
+    let restoreIndex = try #require(batch.firstIndex(of: .restoreDefaultMode(display: rightID)))
+    let firstOrigin = try #require(batch.firstIndex { if case .setOrigin = $0 { true } else { false } })
+    #expect(batch.first == .setMirror(display: rightID, source: nil))
+    #expect(restoreIndex < firstOrigin)
+    #expect(batch.filter { $0 == .restoreDefaultMode(display: rightID) }.count == 1)
+    #expect(try await controller.displays().first(where: { $0.id == rightID })?.role == .main)
+}
+
+@Test
+func mirroringOntoAMirroredSourceRestoresTheSourceModeOnly() async throws {
+    let driver = FakeDisplayDriver(displays: threeDisplays())
+    let controller = DisplayController(driver: driver)
+    try await controller.setMirrorDisplay(rightID, source: mainID)
+
+    try await controller.setMirrorDisplay(leftID, source: rightID)
+
+    let batch = await driver.appliedBatches[1]
+    #expect(batch.prefix(2) == [
+        .setMirror(display: rightID, source: nil),
+        .restoreDefaultMode(display: rightID),
+    ])
+    #expect(batch.last == .setMirror(display: leftID, source: rightID))
+    #expect(!batch.contains(.restoreDefaultMode(display: leftID)))
+}
+
+@Test
+func changesThatDoNotLeaveMirroringNeverRestoreAMode() async throws {
+    let driver = FakeDisplayDriver(displays: threeDisplays())
+    let controller = DisplayController(driver: driver)
+
+    try await controller.setMainDisplay(rightID)
+    try await controller.setMirrorDisplay(leftID, source: rightID)
+    try await controller.setExtendedDisplay(mainID)
+
+    #expect(await driver.restoredModeDisplays.isEmpty)
+    #expect(await driver.appliedBatches.last == [])
 }
 
 @Test

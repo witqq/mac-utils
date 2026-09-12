@@ -51,6 +51,9 @@ public struct DisplayDescriptor: Hashable, Codable, Sendable {
 public enum DisplayConfigurationOperation: Hashable, Codable, Sendable {
     case setOrigin(display: DisplayID, x: Int32, y: Int32)
     case setMirror(display: DisplayID, source: DisplayID?)
+    /// Returns a display that just left mirroring to its own default mode instead of the
+    /// mode macOS chose for the mirror pair.
+    case restoreDefaultMode(display: DisplayID)
 }
 
 public enum DisplayManagerError: Error, Equatable, Sendable, CustomStringConvertible {
@@ -101,6 +104,7 @@ public enum DisplayLayoutPlanner {
 
         if case .mirror = targetDisplay.role {
             operations.append(.setMirror(display: target, source: nil))
+            operations.append(.restoreDefaultMode(display: target))
             let rightEdge = displays
                 .filter { if case .mirror = $0.role { return false }; return true }
                 .map(\.frame.maxX)
@@ -143,6 +147,7 @@ public enum DisplayLayoutPlanner {
 
         return [
             .setMirror(display: target, source: nil),
+            .restoreDefaultMode(display: target),
             .setOrigin(display: target, x: rightEdge, y: main.frame.y),
         ]
     }
@@ -165,6 +170,7 @@ public enum DisplayLayoutPlanner {
         var operations: [DisplayConfigurationOperation] = []
         if case .mirror = sourceDisplay.role {
             operations.append(.setMirror(display: source, source: nil))
+            operations.append(.restoreDefaultMode(display: source))
         }
 
         if targetDisplay.role == .main {

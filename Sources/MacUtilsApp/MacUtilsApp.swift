@@ -21,6 +21,7 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.setActivationPolicy(.accessory)
+        NSApplication.shared.mainMenu = ApplicationMenuFactory.make(text: launchText)
         setUpStatusItem()
 
         let diagnostics = AppDiagnostics()
@@ -63,6 +64,10 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
                 : SystemLoginItemManager()
             var registry = ActionRegistry()
             try DisplayActions.register(in: &registry, manager: displayManager)
+            #if !APP_STORE
+            try UniversalControlActions.register(in: &registry)
+            try NotificationActions.register(in: &registry)
+            #endif
             var stateProviders = StateProviderRegistry()
             try DisplayStateProviders.register(in: &stateProviders, manager: displayManager)
             let coordinator = if options.usesScreenshotFixture {
@@ -200,6 +205,85 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
         } else {
             popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
         }
+    }
+}
+
+enum ApplicationMenuFactory {
+    @MainActor
+    static func make(text: AppText) -> NSMenu {
+        let mainMenu = NSMenu()
+
+        let applicationItem = NSMenuItem()
+        let applicationMenu = NSMenu()
+        let quitItem = NSMenuItem(
+            title: text.format("menu.quit", SystemEnvironment.productName),
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        )
+        quitItem.target = NSApplication.shared
+        applicationMenu.addItem(quitItem)
+        applicationItem.submenu = applicationMenu
+        mainMenu.addItem(applicationItem)
+
+        let editItem = NSMenuItem()
+        let editMenu = NSMenu(title: text("menu.edit"))
+        editMenu.addItem(NSMenuItem(
+            title: text("menu.undo"),
+            action: Selector(("undo:")),
+            keyEquivalent: "z"
+        ))
+        let redoItem = NSMenuItem(
+            title: text("menu.redo"),
+            action: Selector(("redo:")),
+            keyEquivalent: "z"
+        )
+        redoItem.keyEquivalentModifierMask = [.command, .shift]
+        editMenu.addItem(redoItem)
+        editMenu.addItem(.separator())
+        editMenu.addItem(NSMenuItem(
+            title: text("menu.cut"),
+            action: #selector(NSText.cut(_:)),
+            keyEquivalent: "x"
+        ))
+        editMenu.addItem(NSMenuItem(
+            title: text("menu.copy"),
+            action: #selector(NSText.copy(_:)),
+            keyEquivalent: "c"
+        ))
+        editMenu.addItem(NSMenuItem(
+            title: text("menu.paste"),
+            action: #selector(NSText.paste(_:)),
+            keyEquivalent: "v"
+        ))
+        editMenu.addItem(NSMenuItem(
+            title: text("menu.selectAll"),
+            action: #selector(NSText.selectAll(_:)),
+            keyEquivalent: "a"
+        ))
+        editItem.submenu = editMenu
+        mainMenu.addItem(editItem)
+
+        let windowItem = NSMenuItem()
+        let windowMenu = NSMenu(title: text("menu.window"))
+        windowMenu.addItem(NSMenuItem(
+            title: text("menu.closeWindow"),
+            action: #selector(NSWindow.performClose(_:)),
+            keyEquivalent: "w"
+        ))
+        windowMenu.addItem(NSMenuItem(
+            title: text("menu.minimize"),
+            action: #selector(NSWindow.performMiniaturize(_:)),
+            keyEquivalent: "m"
+        ))
+        windowMenu.addItem(NSMenuItem(
+            title: text("menu.zoom"),
+            action: #selector(NSWindow.performZoom(_:)),
+            keyEquivalent: ""
+        ))
+        windowItem.submenu = windowMenu
+        mainMenu.addItem(windowItem)
+
+        return mainMenu
     }
 }
 

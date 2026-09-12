@@ -38,10 +38,13 @@ struct AppText: Sendable {
         return localized
     }
 
-    static func localizationCatalog(for language: AppLanguage) throws -> [String: String] {
+    static func localizationCatalog(
+        for language: AppLanguage,
+        table: String = "Localizable"
+    ) throws -> [String: String] {
         guard let localizationPath = resourceBundle.path(forResource: language.resourceCode, ofType: "lproj"),
               let localizationBundle = Bundle(path: localizationPath),
-              let url = localizationBundle.url(forResource: "Localizable", withExtension: "strings") else {
+              let url = localizationBundle.url(forResource: table, withExtension: "strings") else {
             throw LocalizationCatalogError.missing(language.resourceCode)
         }
         let data = try Data(contentsOf: url)
@@ -176,6 +179,19 @@ struct AppText: Sendable {
             case let .stateReadFailed(providerID, message):
                 format("error.scenario.stateRead", providerID.rawValue, message)
             }
+        #if !APP_STORE
+        case let error as NotificationDismissalError:
+            switch error {
+            case .accessibilityNotGranted: directOnly("error.notifications.accessibility")
+            case .notificationCenterNotRunning: directOnly("error.notifications.notRunning")
+            case let .actionFailed(action, status):
+                String(
+                    format: directOnly("error.notifications.actionFailed"),
+                    locale: Locale(identifier: language.resourceCode),
+                    arguments: [action, status]
+                )
+            }
+        #endif
         default:
             format("error.generic", String(describing: error))
         }
@@ -261,9 +277,16 @@ struct AppText: Sendable {
         self("valueType.\(type.rawValue)")
     }
 
+    /// Reads a key from the Direct-only table, which the App Store build does not ship.
+    private func directOnly(_ key: String) -> String {
+        bundle.localizedString(forKey: key, value: key, table: "DirectOnly")
+    }
+
     private func localizedMetadata(_ key: String, fallback: String) -> String {
         let value = self(key)
-        return value == key ? fallback : value
+        if value != key { return value }
+        let directOnlyValue = bundle.localizedString(forKey: key, value: key, table: "DirectOnly")
+        return directOnlyValue == key ? fallback : directOnlyValue
     }
 
     private func keyLabel(_ keyCode: UInt32) -> String {
