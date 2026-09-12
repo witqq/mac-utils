@@ -34,7 +34,7 @@ The status shown below the switch is read from macOS. If approval is required, s
 
 - **Main display** contains the menu bar and establishes the origin of the desktop layout.
 - **Extended display** adds separate desktop space.
-- **Mirror** shows the content of another display.
+- **Mirror** shows the content of another display. While a display mirrors another one, macOS runs both in a shared mode. When **Extend display** or **Set main display** takes a display out of mirroring, Mac Utils returns it to its own default mode in the same operation, so a rotated (portrait) display keeps its own orientation and resolution.
 - **Toggle by State** reads a current value. It runs **Then** when the value matches and **Otherwise** when it does not.
 
 The menu bar popover lists each connected display, its current role, and resolution. Its **Main**, **Extend**, and **Mirror** controls execute the same registered actions used by scripts.
@@ -73,6 +73,34 @@ One shortcut runs every step in its script in order. To change it, select **Edit
 
 Removing a shortcut requires confirmation but does not delete its script.
 
+## Refresh Universal Control in Direct builds
+
+Keep the Magic Trackpad connected to its normal host Mac and use Apple's Universal Control to control the second Mac. Mac Utils does not pair, disconnect, or transfer the trackpad.
+
+The Direct build provides a local recovery action for cases where Universal Control stops responding:
+
+1. Open **Settings… → Scripts**, create a script, and select **Add Step**.
+2. Add **Refresh Universal Control**. The action has no parameters.
+3. Save the script, open **Shortcuts**, and assign a global key combination.
+4. Press the shortcut on the Mac whose Universal Control connection needs recovery. If necessary, configure and run the same local script on the other Mac.
+
+The action restarts a fixed set of local Continuity processes and lets macOS reconnect them. It can briefly interrupt Universal Control, Handoff, AirDrop, Sidecar, or Universal Clipboard activity. It does not change Apple Account settings or Bluetooth pairing and cannot guarantee recovery when macOS requirements or network conditions are not satisfied.
+
+This action is absent from the Mac App Store build because sandboxed applications cannot perform this process-control operation. The [feasibility report](MAGIC_TRACKPAD_FEASIBILITY.md) explains the supported trackpad arrangement and boundaries.
+
+## Dismiss all notifications in Direct builds
+
+The Direct build provides an action that closes every visible Notification Center banner and alert, including alerts that stay on screen until they are closed by hand (for example, new-mail alerts) and stacked groups:
+
+1. Open **Settings… → Scripts**, create a script, and select **Add Step**.
+2. Add **Dismiss all notifications**. The action has no parameters.
+3. Save the script, open **Shortcuts**, and assign a global key combination.
+4. Press the shortcut whenever notifications cover the screen.
+
+The action needs Accessibility access. On the first run macOS shows a system prompt; allow Mac Utils in **System Settings → Privacy & Security → Accessibility** and run the action again. Until access is granted the action closes nothing. Because a script started by a global shortcut reports no failure inside Mac Utils, that system prompt is the only visible sign that access is missing.
+
+Mac Utils performs only the Notification Center's own **Close** and **Clear All** actions, using their names in every system language. It does not open notifications, read their content, or change notification settings. The action is absent from the Mac App Store build because sandboxed applications cannot control other applications through Accessibility.
+
 ## Optional DSL editor
 
 The visual builder is the recommended editor. **DSL Text** exposes the same safe scenario representation for advanced users. It does not evaluate expressions, access files, launch processes, or run shell code.
@@ -106,9 +134,14 @@ Do not edit the file while Mac Utils is running. If JSON or schema validation fa
 
 - **A display is missing:** reconnect it, then select the refresh button in the menu bar popover.
 - **A mirrored display has a generic name:** extend it once so macOS exposes its localized name again. Its stable identifier remains unchanged.
+- **Window positions change after a display script runs:** macOS re-lays out windows whenever display roles or positions change. Mac Utils does not save or restore window positions.
 - **A shortcut is unavailable:** record a different combination. The existing shortcut remains active during a failed edit.
 - **A script does not validate:** read the localized line and column message, or switch to the visual builder after correcting the DSL.
 - **The UI does not appear in the Dock:** this is expected; Mac Utils is a menu bar accessory application.
 - **Launch at login needs approval:** use the button in **Settings… → General** to open Login Items, allow Mac Utils, then refresh the displayed status.
+- **Notifications are not dismissed:** allow Mac Utils under Accessibility in System Settings, then run the action again. After a macOS update that changes the Notification Center layout, the action may stop finding notifications until Mac Utils is updated.
+- **Universal Control does not reconnect after refresh:** confirm Apple's Universal Control requirements and settings on both Macs, then try the local refresh shortcut on each Mac. The action does not alter pairing or account configuration.
 
 See [Known limitations](KNOWN-LIMITATIONS.md) and [Support](SUPPORT.md) for confirmed constraints and reporting instructions.
+
+When a new utility becomes user-facing, its workflow, limitations, screenshots, download links, and App Store availability must also be reflected in this guide and on the product landing page before release.

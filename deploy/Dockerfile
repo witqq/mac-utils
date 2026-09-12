@@ -6,8 +6,8 @@ FROM nginxinc/nginx-unprivileged:1.31.3-alpine3.24@sha256:334d92979f15aaecd5dd50
 USER root
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 RUN rm -rf /usr/share/nginx/html/*
-COPY website/index.html website/styles.css website/app.js /usr/share/nginx/html/
-COPY website/assets/ /usr/share/nginx/html/assets/
+# website/dist is the committed agentic-report build produced by scripts/build-landing.sh.
+COPY website/dist/ /usr/share/nginx/html/
 RUN find /usr/share/nginx/html -type d -exec chmod 755 {} + \
   && find /usr/share/nginx/html -type f -exec chmod 644 {} +
 

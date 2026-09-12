@@ -150,7 +150,7 @@ end
 
 expected_marketing = {
   File.join(ROOT, "Assets", "Brand", "social", "github-social-preview.png") => [1_280, 640],
-  File.join(ROOT, "website", "assets", "og-image.png") => [1_200, 630],
+  File.join(ROOT, "website", "source", "assets", "og-image.png") => [1_200, 630],
   File.join(ROOT, "Assets", "Brand", "dmg", "background.png") => [720, 480],
 }
 expected_marketing.each do |path, dimensions|
