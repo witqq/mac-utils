@@ -40,6 +40,20 @@ from a read-only unprivileged container; runtime data and persistent volumes are
 Content-Security-Policy allows scripts only from the site itself and inline style declarations, which the
 agentic-report runtime requires.
 
+Before deploying, run the landing in the real container: nginx configuration errors cannot be caught by
+the static checks, and a broken directive stops the container from starting at all.
+
+```sh
+docker build -f deploy/Dockerfile -t mac-utils-site-local .
+docker run -d --rm --name mac-utils-site-smoke -p 3040:4080 mac-utils-site-local
+curl -sI http://127.0.0.1:3040/ | grep -i content-security-policy
+curl -s http://127.0.0.1:3040/ | shasum -a 256    # must equal website/dist/index.html
+docker rm -f mac-utils-site-smoke
+```
+
+Port 3040 is reserved for this smoke container in the local port inventory. A regex `location` block with
+braces must stay quoted, otherwise nginx reads the braces as a configuration block and refuses to start.
+
 Validate and deploy from the repository root:
 
 ```sh
