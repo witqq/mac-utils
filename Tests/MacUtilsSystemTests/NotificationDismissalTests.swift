@@ -9,15 +9,23 @@ private struct PerformedAction: Equatable {
     let displayName: String
 }
 
+/// Fake Notification Center whose tree actually shrinks: performing a dismissal removes that node,
+/// the way macOS removes the notification it belongs to.
 private actor FakeNotificationCenter: NotificationCenterAccessing {
     private let granted: Bool
-    private let windows: [NotificationCenterNode]?
+    private var windows: [NotificationCenterNode]?
+    private let undismissable: Set<String>
     private(set) var performed: [PerformedAction] = []
     private(set) var treeReads = 0
 
-    init(granted: Bool = true, windows: [NotificationCenterNode]?) {
+    init(
+        granted: Bool = true,
+        windows: [NotificationCenterNode]?,
+        undismissable: Set<String> = []
+    ) {
         self.granted = granted
         self.windows = windows
+        self.undismissable = undismissable
     }
 
     func isAccessibilityGranted() async -> Bool { granted }
@@ -32,6 +40,24 @@ private actor FakeNotificationCenter: NotificationCenterAccessing {
             node: handle.identifier,
             displayName: NotificationDismisser.displayName(ofRawActionName: actionName) ?? actionName
         ))
+        if undismissable.contains(handle.identifier) {
+            throw NotificationDismissalError.actionFailed(action: actionName, status: -25202)
+        }
+        windows = windows?.compactMap { Self.removing(handle.identifier, from: $0) }
+    }
+
+    private static func removing(
+        _ identifier: String,
+        from node: NotificationCenterNode
+    ) -> NotificationCenterNode? {
+        guard node.handle.identifier != identifier else { return nil }
+        return NotificationCenterNode(
+            role: node.role,
+            subrole: node.subrole,
+            actionNames: node.actionNames,
+            children: node.children.compactMap { removing(identifier, from: $0) },
+            handle: node.handle
+        )
     }
 }
 
@@ -93,8 +119,16 @@ private let messageBanner = node(
 
 private let stackedGroup = node(
     "stack",
-    subrole: "AXNotificationCenterBanner",
+    subrole: "AXNotificationCenterBannerStack",
     actions: ["AXPress", rawAction("Close"), rawAction("Clear All"), rawAction("Show")]
+)
+
+/// The shape macOS uses for repeated alerts from one app, observed on macOS 26 for an iTerm2 bell.
+private let alertStack = node(
+    "alert-stack",
+    subrole: "AXNotificationCenterAlertStack",
+    actions: ["AXPress", rawAction("Показать детали"), rawAction("Показать"), rawAction("Очистить все")],
+    children: [node("title", role: "AXStaticText", actions: ["AXShowMenu"])]
 )
 
 @Test
@@ -108,6 +142,64 @@ func bannersAndAlertsAreClosedThroughTheirLocalizedCloseAction() async throws {
         PerformedAction(node: "mail", displayName: "Закрыть"),
         PerformedAction(node: "message", displayName: "Close"),
     ])
+}
+
+@Test
+func everyNotificationSubroleIncludingStacksIsDismissed() async throws {
+    let center = FakeNotificationCenter(windows: [notificationWindow([
+        mailAlert,
+        messageBanner,
+        stackedGroup,
+        alertStack,
+    ])])
+
+    let report = try await NotificationDismisser(access: center, names: FixedNames()).dismissAll()
+
+    #expect(report.dismissedCount == 4)
+    #expect(await center.performed == [
+        PerformedAction(node: "mail", displayName: "Закрыть"),
+        PerformedAction(node: "message", displayName: "Close"),
+        PerformedAction(node: "stack", displayName: "Clear All"),
+        PerformedAction(node: "alert-stack", displayName: "Очистить все"),
+    ])
+}
+
+@Test
+func aStackNestedBehindAListContainerIsStillFound() async throws {
+    // macOS 26 wraps notifications in an AXNotificationListItems group inside the scroll area.
+    let list = node("AXNotificationListItems", children: [alertStack])
+    let center = FakeNotificationCenter(windows: [notificationWindow([list])])
+
+    let report = try await NotificationDismisser(access: center, names: FixedNames()).dismissAll()
+
+    #expect(report.dismissedCount == 1)
+    #expect(await center.performed == [
+        PerformedAction(node: "alert-stack", displayName: "Очистить все"),
+    ])
+}
+
+@Test
+func anItemStillListedAfterItsDismissalIsNotDismissedOrCountedTwice() async throws {
+    // Notification Center keeps reporting an item for a moment after it is removed.
+    let center = LaggingNotificationCenter()
+
+    let report = try await NotificationDismisser(access: center, names: FixedNames()).dismissAll()
+
+    #expect(report.dismissedCount == 1)
+    #expect(await center.performed == ["alert-stack"])
+}
+
+@Test
+func anItemThatNeverGoesAwayFailsInsteadOfLoopingForever() async throws {
+    let center = FakeNotificationCenter(
+        windows: [notificationWindow([mailAlert, messageBanner])],
+        undismissable: ["message"]
+    )
+
+    await #expect(throws: NotificationDismissalError.self) {
+        _ = try await NotificationDismisser(access: center, names: FixedNames()).dismissAll()
+    }
+    #expect(await center.performed.filter { $0.node == "mail" }.count == 1)
 }
 
 @Test
@@ -188,6 +280,22 @@ func systemActionNamesIncludeTheBuiltInFallbacksAndAnyReadableLocalizations() th
     let names = NotificationCenterActionNames(tablePath: url.path)
     #expect(names.closeNames.isSuperset(of: ["Close", "Schließen", "Fermer"]))
     #expect(names.clearAllNames.contains("Alle löschen"))
+}
+
+/// Keeps listing the same stack no matter how often it is dismissed, the way the real tree does
+/// while it catches up with the dismissal.
+private actor LaggingNotificationCenter: NotificationCenterAccessing {
+    private(set) var performed: [String] = []
+
+    func isAccessibilityGranted() async -> Bool { true }
+
+    func windowTree() async throws -> [NotificationCenterNode]? {
+        [notificationWindow([alertStack])]
+    }
+
+    func perform(actionName: String, on handle: NotificationCenterNodeHandle) async throws {
+        performed.append(handle.identifier)
+    }
 }
 
 private actor FakeDismisser: NotificationDismissing {

@@ -87,6 +87,8 @@ protocol NotificationActionNaming: Sendable {
 }
 
 struct NotificationDismissalReport: Equatable, Sendable {
+    /// Number of dismissed Notification Center items. A stack of repeated notifications from one
+    /// application is one item, because macOS removes the whole stack with a single action.
     let dismissedCount: Int
 }
 
@@ -96,8 +98,29 @@ protocol NotificationDismissing: Sendable {
 
 /// Walks the Notification Center windows and dismisses every banner, alert and stack.
 struct NotificationDismisser: NotificationDismissing {
-    static let bannerSubrole = "AXNotificationCenterBanner"
-    static let alertSubrole = "AXNotificationCenterAlert"
+    /// Every Notification Center subrole that stands for a dismissable notification. macOS groups
+    /// repeated notifications from one application into a stack, which carries its own subrole and
+    /// is dismissed as a whole. `AXNotificationCenterNextFocus` is a focus helper rather than a
+    /// notification and is deliberately absent.
+    static let notificationSubroles: Set<String> = [
+        "AXNotificationCenterAlert",
+        "AXNotificationCenterAlertStack",
+        "AXNotificationCenterBanner",
+        "AXNotificationCenterBannerStack",
+    ]
+
+    /// Dismissing one element rearranges the remaining ones, so the tree is re-read between passes
+    /// instead of acting on elements that may no longer exist.
+    private static let maximumPasses = 8
+
+    /// Notification Center updates its accessibility tree shortly after an item goes away, so a
+    /// pass waits before asking what is left. Without the pause the same item is seen as remaining.
+    private static let settleDelay = Duration.milliseconds(250)
+
+    private struct DismissalTarget {
+        let handle: NotificationCenterNodeHandle
+        let actionName: String
+    }
 
     private let access: any NotificationCenterAccessing
     private let names: any NotificationActionNaming
@@ -111,33 +134,53 @@ struct NotificationDismisser: NotificationDismissing {
         guard await access.isAccessibilityGranted() else {
             throw NotificationDismissalError.accessibilityNotGranted
         }
-        guard let windows = try await access.windowTree() else {
-            throw NotificationDismissalError.notificationCenterNotRunning
-        }
 
         var dismissed = 0
-        for window in windows {
+        var remainingBeforePass = Int.max
+        for _ in 0 ..< Self.maximumPasses {
             try Task.checkCancellation()
-            dismissed += try await dismiss(in: window)
+            guard let windows = try await access.windowTree() else {
+                throw NotificationDismissalError.notificationCenterNotRunning
+            }
+
+            // Stop once nothing is left, and also once a pass stops shortening the list: repeating
+            // the same action on the same items would inflate the count without removing anything.
+            let targets = windows.flatMap(dismissalTargets(in:))
+            guard !targets.isEmpty, targets.count < remainingBeforePass else { break }
+            remainingBeforePass = targets.count
+
+            var dismissedInPass = 0
+            var failure: (any Error)?
+            for target in targets {
+                try Task.checkCancellation()
+                do {
+                    try await access.perform(actionName: target.actionName, on: target.handle)
+                    dismissedInPass += 1
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    failure = error
+                }
+            }
+
+            dismissed += dismissedInPass
+            if dismissedInPass == 0 {
+                if let failure { throw failure }
+                break
+            }
+            try await Task.sleep(for: Self.settleDelay)
         }
         return NotificationDismissalReport(dismissedCount: dismissed)
     }
 
-    private func dismiss(in node: NotificationCenterNode) async throws -> Int {
+    private func dismissalTargets(in node: NotificationCenterNode) -> [DismissalTarget] {
         if node.role == "AXGroup",
            let subrole = node.subrole,
-           subrole == Self.bannerSubrole || subrole == Self.alertSubrole,
-           let action = dismissalAction(in: node.actionNames) {
-            try await access.perform(actionName: action, on: node.handle)
-            return 1
+           Self.notificationSubroles.contains(subrole),
+           let actionName = dismissalAction(in: node.actionNames) {
+            return [DismissalTarget(handle: node.handle, actionName: actionName)]
         }
-
-        var dismissed = 0
-        for child in node.children {
-            try Task.checkCancellation()
-            dismissed += try await dismiss(in: child)
-        }
-        return dismissed
+        return node.children.flatMap(dismissalTargets(in:))
     }
 
     /// Picks the raw action name whose display name is a localized "Clear All" or "Close".
@@ -284,7 +327,7 @@ private struct DismissNotificationsAction: UtilityAction {
     func execute(parameters: ActionParameters, context: ActionContext) async throws -> ActionResult {
         let report = try await dismisser.dismissAll()
         return ActionResult(
-            summary: "Dismissed \(report.dismissedCount) notification(s).",
+            summary: "Dismissed \(report.dismissedCount) Notification Center item(s).",
             values: ["dismissedCount": .integer(report.dismissedCount)]
         )
     }

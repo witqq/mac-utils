@@ -90,7 +90,7 @@ This action is absent from the Mac App Store build because sandboxed application
 
 ## Dismiss all notifications in Direct builds
 
-The Direct build provides an action that closes every visible Notification Center banner and alert, including alerts that stay on screen until they are closed by hand (for example, new-mail alerts) and stacked groups:
+The Direct build provides an action that closes every visible Notification Center banner and alert, including alerts that stay on screen until they are closed by hand (for example, new-mail alerts) and the stacks macOS builds from repeated notifications of one application:
 
 1. Open **Settings… → Scripts**, create a script, and select **Add Step**.
 2. Add **Dismiss all notifications**. The action has no parameters.
@@ -99,7 +99,7 @@ The Direct build provides an action that closes every visible Notification Cente
 
 The action needs Accessibility access. On the first run macOS shows a system prompt; allow Mac Utils in **System Settings → Privacy & Security → Accessibility** and run the action again. Until access is granted the action closes nothing. Because a script started by a global shortcut reports no failure inside Mac Utils, that system prompt is the only visible sign that access is missing.
 
-Mac Utils performs only the Notification Center's own **Close** and **Clear All** actions, using their names in every system language. It does not open notifications, read their content, or change notification settings. The action is absent from the Mac App Store build because sandboxed applications cannot control other applications through Accessibility.
+Mac Utils performs only the Notification Center's own **Close** and **Clear All** actions, using their names in every system language. A stack is removed as a whole by its **Clear All** action, so it counts as one dismissed item. It does not open notifications, read their content, or change notification settings. The action is absent from the Mac App Store build because sandboxed applications cannot control other applications through Accessibility.
 
 ## Optional DSL editor
 
