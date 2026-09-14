@@ -28,29 +28,6 @@ public struct ConfigurationLoadResult: Sendable {
     }
 }
 
-protocol ConfigurationFileAccess: Sendable {
-    func read(from url: URL) async throws -> Data?
-    func writeAtomically(_ data: Data, to url: URL) async throws
-}
-
-private struct LocalConfigurationFileAccess: ConfigurationFileAccess {
-    func read(from url: URL) async throws -> Data? {
-        do {
-            return try Data(contentsOf: url)
-        } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
-            return nil
-        }
-    }
-
-    func writeAtomically(_ data: Data, to url: URL) async throws {
-        try FileManager.default.createDirectory(
-            at: url.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        try data.write(to: url, options: .atomic)
-    }
-}
-
 public actor ConfigurationStore {
     public static var defaultFileURL: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -58,45 +35,34 @@ public actor ConfigurationStore {
             .appending(path: "configuration.json", directoryHint: .notDirectory)
     }
 
-    private let fileURL: URL
-    private let fileAccess: any ConfigurationFileAccess
-    private let encoder: JSONEncoder
-    private let decoder: JSONDecoder
+    private let fileStore: AtomicJSONFileStore<AppConfiguration>
 
     public init(fileURL: URL = ConfigurationStore.defaultFileURL) {
-        self.fileURL = fileURL
-        fileAccess = LocalConfigurationFileAccess()
-        encoder = Self.makeEncoder()
-        decoder = JSONDecoder()
+        fileStore = AtomicJSONFileStore(fileURL: fileURL)
     }
 
     init(fileURL: URL, fileAccess: any ConfigurationFileAccess) {
-        self.fileURL = fileURL
-        self.fileAccess = fileAccess
-        encoder = Self.makeEncoder()
-        decoder = JSONDecoder()
+        fileStore = AtomicJSONFileStore(fileURL: fileURL, fileAccess: fileAccess)
     }
 
     public func load() async -> ConfigurationLoadResult {
-        let data: Data
-        do {
-            guard let stored = try await fileAccess.read(from: fileURL) else {
-                return ConfigurationLoadResult(configuration: .empty, recoveryError: nil)
-            }
-            data = stored
-        } catch {
-            return recovered(error: .fileAccess(String(describing: error)))
-        }
-
-        do {
-            let configuration = try decoder.decode(AppConfiguration.self, from: data)
+        switch await fileStore.read() {
+        case .missing:
+            return ConfigurationLoadResult(configuration: .empty, recoveryError: nil)
+        case let .value(configuration):
             do {
                 try configuration.validate()
+                return ConfigurationLoadResult(configuration: configuration, recoveryError: nil)
             } catch let error as ConfigurationValidationError {
                 return recovered(error: .invalid(error))
+            } catch {
+                return recovered(error: .corruptData(String(describing: error)))
             }
-            return ConfigurationLoadResult(configuration: configuration, recoveryError: nil)
-        } catch {
+        case let .failure(.read(message)):
+            return recovered(error: .fileAccess(message))
+        case let .failure(.decode(message)):
+            return recovered(error: .corruptData(message))
+        case let .failure(error):
             return recovered(error: .corruptData(String(describing: error)))
         }
     }
@@ -108,27 +74,19 @@ public actor ConfigurationStore {
             throw ConfigurationStoreError.invalid(error)
         }
 
-        let data: Data
         do {
-            data = try encoder.encode(configuration)
-        } catch {
-            throw ConfigurationStoreError.corruptData(String(describing: error))
-        }
-
-        do {
-            try await fileAccess.writeAtomically(data, to: fileURL)
-        } catch {
-            throw ConfigurationStoreError.fileAccess(String(describing: error))
+            try await fileStore.write(configuration)
+        } catch let error as AtomicJSONFileError {
+            switch error {
+            case let .encode(message), let .decode(message):
+                throw ConfigurationStoreError.corruptData(message)
+            case let .write(message), let .read(message):
+                throw ConfigurationStoreError.fileAccess(message)
+            }
         }
     }
 
     private func recovered(error: ConfigurationStoreError) -> ConfigurationLoadResult {
         ConfigurationLoadResult(configuration: .empty, recoveryError: error)
-    }
-
-    private static func makeEncoder() -> JSONEncoder {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        return encoder
     }
 }

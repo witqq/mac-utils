@@ -1,1 +1,1 @@
-Build a visual display workflow once, then switch layouts from any app with one global shortcut.
+Build a script from ready-made actions once, then run it from any app with one global keyboard shortcut.

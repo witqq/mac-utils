@@ -22,8 +22,8 @@ settings:
     GCC_TREAT_WARNINGS_AS_ERRORS: YES
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
     ENABLE_USER_SCRIPT_SANDBOXING: YES
-    CURRENT_PROJECT_VERSION: "2"
-    MARKETING_VERSION: "1.1.0"
+    CURRENT_PROJECT_VERSION: "4"
+    MARKETING_VERSION: "1.2.0"
   configs:
     Debug:
       SWIFT_OPTIMIZATION_LEVEL: -Onone
@@ -34,6 +34,8 @@ settings:
     Release-AppStore:
       SWIFT_OPTIMIZATION_LEVEL: -O
       DEAD_CODE_STRIPPING: YES
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: APP_STORE
+      EXCLUDED_SOURCE_FILE_NAMES: DirectOnly.strings
 
 targets:
   MacUtilsCore:
@@ -94,6 +96,7 @@ targets:
           CODE_SIGN_ENTITLEMENTS: Config/Entitlements/Direct.entitlements
         Release-AppStore:
           CODE_SIGN_ENTITLEMENTS: Config/Entitlements/AppStore.entitlements
+          INFOPLIST_FILE: Config/App/Info-AppStore.plist
 
   MacUtilsCoreTests:
     type: bundle.unit-test

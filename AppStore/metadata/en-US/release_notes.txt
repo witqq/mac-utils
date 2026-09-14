@@ -1,1 +1,1 @@
-Adds optional launch at login, live macOS approval status, and a direct link to Login Items in System Settings. Automatic launch changes only when you use the new General setting.
+Adds optional launch at login with the live macOS approval state and a direct link to Login Items, and keeps a display in its own mode when it leaves mirroring. Mac Utils is a script builder: compose ready-made actions and run each script with one global keyboard shortcut.

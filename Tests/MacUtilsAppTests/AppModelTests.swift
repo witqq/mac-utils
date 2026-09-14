@@ -521,6 +521,10 @@ func englishAndRussianCatalogsLocalizeUIActionsProvidersAndErrors() async throws
     let manager = AppModelDisplayManager(displays: [appDisplay(appMainID, role: .main)])
     var actions = ActionRegistry()
     try DisplayActions.register(in: &actions, manager: manager)
+    #if !APP_STORE
+    try UniversalControlActions.register(in: &actions)
+    try NotificationActions.register(in: &actions)
+    #endif
     var providers = StateProviderRegistry()
     try DisplayStateProviders.register(in: &providers, manager: manager)
     let action = try #require(actions.metadata.first(where: { $0.id == DisplayActions.extendID }))
@@ -530,6 +534,24 @@ func englishAndRussianCatalogsLocalizeUIActionsProvidersAndErrors() async throws
     #expect(russian("help.title") == "Как работает Mac Utils")
     #expect(english.actionName(action) == "Extend display")
     #expect(russian.actionName(action) == "Расширить дисплей")
+    #if !APP_STORE
+    let refreshAction = try #require(actions.metadata.first(where: {
+        $0.id == UniversalControlActions.refreshID
+    }))
+    #expect(english.actionName(refreshAction) == "Refresh Universal Control")
+    #expect(russian.actionName(refreshAction) == "Обновить Universal Control")
+    let dismissAction = try #require(actions.metadata.first(where: {
+        $0.id == NotificationActions.dismissID
+    }))
+    #expect(english.actionName(dismissAction) == "Dismiss all notifications")
+    #expect(russian.actionName(dismissAction) == "Закрыть все уведомления")
+    #expect(english.error(NotificationDismissalError.accessibilityNotGranted)
+        .contains("Privacy & Security → Accessibility"))
+    #expect(russian.error(NotificationDismissalError.accessibilityNotGranted)
+        .contains("Универсальный доступ"))
+    #expect(russian.error(NotificationDismissalError.actionFailed(action: "Name:Закрыть", status: -1))
+        == "Центр уведомлений отклонил действие «Name:Закрыть» (статус универсального доступа -1).")
+    #endif
     #expect(english.providerName(provider) == "Display Mode")
     #expect(russian.providerName(provider) == "Режим дисплея")
     #expect(russian.error(ShortcutCoordinatorError.shortcutConflict(existingBindingID: UUID()))
@@ -552,6 +574,41 @@ func localizationCatalogsHaveMatchingCompleteKeysAndFormatArguments() throws {
     for key in english.keys {
         #expect(formatSpecifiers(in: english[key] ?? "") == formatSpecifiers(in: russian[key] ?? ""))
     }
+}
+
+#if !APP_STORE
+@Test
+func directOnlyCatalogsHaveMatchingCompleteKeysAndFormatArguments() throws {
+    let english = try AppText.localizationCatalog(for: .english, table: "DirectOnly")
+    let russian = try AppText.localizationCatalog(for: .russian, table: "DirectOnly")
+
+    #expect(!english.isEmpty)
+    #expect(Set(english.keys) == Set(russian.keys))
+    #expect(english.values.allSatisfy { !$0.isEmpty })
+    #expect(russian.values.allSatisfy { !$0.isEmpty })
+    for key in english.keys {
+        #expect(formatSpecifiers(in: english[key] ?? "") == formatSpecifiers(in: russian[key] ?? ""))
+    }
+}
+#endif
+
+@Test @MainActor
+func applicationMenuProvidesStandardWindowAndQuitShortcuts() throws {
+    let menu = ApplicationMenuFactory.make(text: AppText(language: .english))
+    let items = menu.items.compactMap(\.submenu).flatMap(\.items)
+
+    let close = try #require(items.first(where: { $0.keyEquivalent == "w" }))
+    let minimize = try #require(items.first(where: { $0.keyEquivalent == "m" }))
+    let quit = try #require(items.first(where: { $0.keyEquivalent == "q" }))
+    let copy = try #require(items.first(where: { $0.keyEquivalent == "c" }))
+    let paste = try #require(items.first(where: { $0.keyEquivalent == "v" }))
+    let selectAll = try #require(items.first(where: { $0.keyEquivalent == "a" }))
+    #expect(close.action == #selector(NSWindow.performClose(_:)))
+    #expect(minimize.action == #selector(NSWindow.performMiniaturize(_:)))
+    #expect(quit.action == #selector(NSApplication.terminate(_:)))
+    #expect(copy.action == #selector(NSText.copy(_:)))
+    #expect(paste.action == #selector(NSText.paste(_:)))
+    #expect(selectAll.action == #selector(NSText.selectAll(_:)))
 }
 
 private func formatSpecifiers(in value: String) -> [String] {

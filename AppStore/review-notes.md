@@ -1,8 +1,8 @@
 # App Review notes
 
-Mac Utils is a menu bar app and intentionally has no Dock icon. No account, network connection, or special credentials are required.
+Mac Utils is a menu bar app and intentionally has no Dock icon. It builds scripts from registered actions and runs each script with one global keyboard shortcut. No account, network connection, or special credentials are required.
 
-To review the main feature:
+To review the main feature (the display actions are the ones available in the App Store build):
 
 - Connect two displays before launching the app.
 - Select the overlapping-display icon in the macOS menu bar, then select **Settings…**.

@@ -7,31 +7,40 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/witqq/mac-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/witqq/mac-utils/actions/workflows/ci.yml)
 
-Mac Utils is a native menu bar application for building dependable macOS utility shortcuts without writing code. The first utility controls connected displays: make a display main, extend the desktop, mirror another display, or switch between layouts according to the current state.
+Mac Utils is a native macOS menu bar app for building scripts out of ready-made actions and running each script with one global keyboard shortcut from any application. Compose the steps visually, branch on the live system state, assign a key, and press it wherever you are. The catalog of actions keeps growing: today it covers display roles and layouts, launch at login, and, in the Direct build, closing every notification and refreshing Universal Control.
 
 ## Availability
 
 Mac Utils requires macOS 26 or later.
 
 - **Source and issues:** [github.com/witqq/mac-utils](https://github.com/witqq/mac-utils) is the public project repository.
-- **GitHub Releases:** download the notarized v1.0.0 DMG and its SHA-256 checksum from the [v1.0.0 release](https://github.com/witqq/mac-utils/releases/tag/v1.0.0).
-- **Mac App Store:** the product link will be added after Apple publishes v1.0.0.
+- **GitHub Releases:** download the notarized DMG and its SHA-256 checksum from the [latest release](https://github.com/witqq/mac-utils/releases/latest). The Direct build from GitHub contains every action, including the ones that the Mac App Store sandbox cannot run.
+- **Mac App Store:** the sandboxed Store build is in review; the product link will be added after Apple publishes it.
 - **Website and support:** [mac-utils.witqq.dev](https://mac-utils.witqq.dev) is the canonical marketing and support address.
 
 The Mac App Store product remains marked as pending until Apple publication completes. Development builds are available from this repository.
 
-## What it does
+## How it works
 
-- Lives in the macOS menu bar without a Dock icon.
-- Reads connected displays and shows their main, extended, or mirrored role.
-- Builds multi-step scripts with a visual editor and typed controls.
-- Uses **Toggle by State** to choose a branch from the live display state.
-- Assigns one native global keyboard shortcut to an entire script.
-- Safely edits shortcuts: a conflicting or unavailable replacement leaves the previous shortcut active.
-- Stores configuration locally and supports English, Russian, or the system language.
-- Optionally launches at login through the macOS Login Items service, with visible system approval status.
+- **Scripts.** A script is an ordered list of actions built in a visual editor with typed controls, or written in a small data-only DSL.
+- **Toggle by State.** A script can read a live state and run one branch when it matches and another when it does not, so one key toggles instead of guessing what happened last time.
+- **Global shortcuts.** One native macOS shortcut runs the whole script while any application is active. A conflicting or unavailable replacement leaves the previous shortcut working.
+- **Menu bar only.** Mac Utils lives in the menu bar without a Dock icon, stores its configuration locally, and speaks English, Russian, or the system language.
 
-Mac Utils scripts can call only actions registered by the application. They cannot execute shell commands or arbitrary downloaded code.
+Scripts can call only actions registered by the application. They cannot execute shell commands or arbitrary downloaded code.
+
+## Actions available today
+
+| Action | What it does | Builds |
+| --- | --- | --- |
+| Set main display | Makes a connected display the macOS main display. | Direct, App Store |
+| Extend display | Takes a display out of mirroring and adds it as desktop space. | Direct, App Store |
+| Mirror display | Makes one display mirror another. | Direct, App Store |
+| Display Mode (state) | Reads whether a display is main, extended, or mirrored for Toggle by State. | Direct, App Store |
+| Dismiss all notifications | Closes every Notification Center banner, alert, and stack through Accessibility. | Direct |
+| Refresh Universal Control | Restarts the local Continuity services so Universal Control reconnects. | Direct |
+
+Launch at login is a setting rather than an action: it uses the macOS Login Items service and shows the live approval status. Direct-only actions need capabilities that the App Store sandbox does not allow; see [Known limitations](docs/KNOWN-LIMITATIONS.md). New actions plug into the same registries; [Adding utilities, actions, and state providers](docs/EXTENDING.md) explains how.
 
 ## Quick start
 
@@ -46,17 +55,15 @@ Install Xcode 26 with its command-line tools, then run:
 
 The overlapping-displays icon appears in the menu bar. Open it, select **Settings…**, and follow the onboarding screen.
 
-### Build a mirror/extend toggle without code
+### Build your first script without code
 
 1. Open **Settings… → Scripts** and select **+**.
-2. Enter a name such as `Toggle office displays`.
-3. Select **Add Step → Toggle by State → Display Mode**.
-4. Choose the secondary display and set **When state is** to **Mirror**.
-5. Under **Then**, add **Extend display** for the secondary display.
-6. Under **Otherwise**, add **Mirror display**; choose the secondary display and the main display as **Source**.
-7. Select **Save**, open **Shortcuts**, record a combination, and select **Assign**.
+2. Enter a name such as `Clear the screen`.
+3. Select **Add Step** and pick an action, for example **Dismiss all notifications** (Direct build) or a display action.
+4. Add more steps or a **Toggle by State** block when the script should react to the current state.
+5. Select **Save**, open **Shortcuts**, record a combination, and select **Assign**.
 
-The same key now extends a mirrored display and mirrors it again when it is extended. The built-in **Help** tab explains the terms and workflow.
+The key now runs the whole script from any application. The built-in **Help** tab explains the terms and includes a ready mirror/extend toggle recipe; the [User guide](docs/USER_GUIDE.md) walks through every action.
 
 ## Documentation
 
@@ -72,8 +79,9 @@ The same key now extends a mirrored display and mirrors it again when it is exte
 - [Release operations](docs/RELEASING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Changelog](CHANGELOG.md)
+- [v1.2.0 release notes](docs/releases/v1.2.0.md)
+- [v1.1.0 release notes](docs/releases/v1.1.0.md)
 - [v1.0.0 release notes](docs/releases/v1.0.0.md)
-- [Prepared v1.1.0 release notes](docs/releases/v1.1.0.md)
 
 ## Development
 
@@ -93,7 +101,7 @@ XcodeGen 2.46.0 or later is required for project generation. Local archive comma
 Core modules:
 
 - `MacUtilsCore` defines actions, typed parameters, scenarios, state providers, and the safe DSL.
-- `MacUtilsSystem` implements CoreGraphics display control, native Carbon hotkeys, the Service Management login-item adapter, and atomic configuration storage.
+- `MacUtilsSystem` implements the system-facing actions (CoreGraphics display control, Accessibility-based notification dismissal, Continuity service refresh), native Carbon hotkeys, the Service Management login-item adapter, and atomic configuration storage.
 - `MacUtilsApp` composes the registries and presents the menu bar and settings UI.
 
 See [Architecture](docs/ARCHITECTURE.md) before changing module boundaries.

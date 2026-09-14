@@ -1,6 +1,7 @@
 import AppKit
 import ColorSync
 import CoreGraphics
+import IOKit.graphics
 import MacUtilsCore
 
 struct CoreGraphicsDisplayDriver: DisplayConfigurationDriver {
@@ -43,6 +44,15 @@ struct CoreGraphicsDisplayDriver: DisplayConfigurationDriver {
         let rawDisplays = try onlineDisplayIDs()
         let stableIDs = try stableIDMap(for: rawDisplays)
         let rawByStableID = Dictionary(uniqueKeysWithValues: stableIDs.map { ($0.value, $0.key) })
+        // Mode catalogs are read before the transaction opens so the transaction only applies
+        // decisions that were already made.
+        var restoredModes: [DisplayID: CGDisplayMode] = [:]
+        for case let .restoreDefaultMode(display) in operations {
+            guard let rawID = rawByStableID[display] else {
+                throw DisplayManagerError.displayNotFound(display)
+            }
+            restoredModes[display] = preferredMode(for: rawID)
+        }
 
         var configuration: CGDisplayConfigRef?
         try check(CGBeginDisplayConfiguration(&configuration), operation: "begin transaction")
@@ -79,6 +89,16 @@ struct CoreGraphicsDisplayDriver: DisplayConfigurationDriver {
                         CGConfigureDisplayMirrorOfDisplay(configuration, rawID, sourceRawID),
                         operation: "set mirroring for \(display)"
                     )
+                case let .restoreDefaultMode(display):
+                    guard let rawID = rawByStableID[display] else {
+                        throw DisplayManagerError.displayNotFound(display)
+                    }
+                    // `nil` means the display already runs its preferred mode (or offers none).
+                    guard let mode = restoredModes[display] ?? nil else { continue }
+                    try check(
+                        CGConfigureDisplayWithDisplayMode(configuration, rawID, mode, nil),
+                        operation: "restore default mode for \(display)"
+                    )
                 }
             }
 
@@ -91,6 +111,27 @@ struct CoreGraphicsDisplayDriver: DisplayConfigurationDriver {
             }
             throw error
         }
+    }
+
+    private func preferredMode(for display: CGDirectDisplayID) -> CGDisplayMode? {
+        let options = [kCGDisplayShowDuplicateLowResolutionModes: kCFBooleanTrue] as CFDictionary
+        guard let modes = CGDisplayCopyAllDisplayModes(display, options) as? [CGDisplayMode] else {
+            return nil
+        }
+        let currentModeID = CGDisplayCopyDisplayMode(display)?.ioDisplayModeID
+        let candidates = modes.enumerated().map { index, mode in
+            DisplayModeCandidate(
+                index: index,
+                pixelCount: mode.pixelWidth * mode.pixelHeight,
+                isDefault: mode.ioFlags & UInt32(kDisplayModeDefaultFlag) != 0,
+                isNative: mode.ioFlags & UInt32(kDisplayModeNativeFlag) != 0,
+                isCurrent: mode.ioDisplayModeID == currentModeID
+            )
+        }
+        guard let index = DisplayModeSelection.preferredCandidateIndex(in: candidates) else {
+            return nil
+        }
+        return modes[index]
     }
 
     private func onlineDisplayIDs() throws -> [CGDirectDisplayID] {

@@ -1,0 +1,7 @@
+"action.refresh-universal-control.name" = "Обновить Universal Control";
+"action.refresh-universal-control.description" = "Перезапускает локальные службы Continuity, чтобы Universal Control мог подключиться заново. Только для Direct-сборок.";
+"action.dismiss-notifications.name" = "Закрыть все уведомления";
+"action.dismiss-notifications.description" = "Закрывает все видимые баннеры и алерты Центра уведомлений, включая сгруппированные стопки. Требует права «Универсальный доступ». Только для Direct-сборок.";
+"error.notifications.accessibility" = "Mac Utils нужно право «Универсальный доступ», чтобы закрывать уведомления. Разрешите Mac Utils в Системных настройках → Конфиденциальность и безопасность → Универсальный доступ и запустите действие снова.";
+"error.notifications.notRunning" = "Центр уведомлений не запущен, закрывать нечего.";
+"error.notifications.actionFailed" = "Центр уведомлений отклонил действие «%@» (статус универсального доступа %d).";

@@ -128,7 +128,7 @@
 "help.safety.body" = "Сценарии Mac Utils вызывают только зарегистрированные действия. Они не могут выполнять shell-команды, открывать произвольные файлы или запускать загруженный код.";
 
 "onboarding.title" = "Добро пожаловать в Mac Utils";
-"onboarding.subtitle" = "Создавайте надёжные сочетания для дисплеев без программирования.";
+"onboarding.subtitle" = "Собирайте готовые действия в сценарии и запускайте их одной глобальной клавишей.";
 "onboarding.visual.title" = "Собирайте мышкой";
 "onboarding.visual.body" = "Добавляйте действия и ветки по состоянию через обычные меню и поля.";
 "onboarding.hotkey.title" = "Запускайте откуда угодно";
@@ -246,3 +246,16 @@
 "provider.display.mode.option.main" = "Основной";
 "provider.display.mode.option.extended" = "Расширенный";
 "provider.display.mode.option.mirror" = "Зеркало";
+
+"menu.quit" = "Завершить %@";
+"menu.edit" = "Правка";
+"menu.undo" = "Отменить";
+"menu.redo" = "Повторить";
+"menu.cut" = "Вырезать";
+"menu.copy" = "Копировать";
+"menu.paste" = "Вставить";
+"menu.selectAll" = "Выбрать всё";
+"menu.window" = "Окно";
+"menu.closeWindow" = "Закрыть окно";
+"menu.minimize" = "Свернуть";
+"menu.zoom" = "Масштаб";
