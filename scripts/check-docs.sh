@@ -26,9 +26,17 @@ for file in .github/ISSUE_TEMPLATE/*.yml .github/release.yml .github/workflows/*
     ruby -e 'require "yaml"; YAML.safe_load(File.read(ARGV.fetch(0)), aliases: false)' "$file"
 done
 
-plutil -lint \
-    Sources/MacUtilsApp/Resources/en.lproj/Localizable.strings \
-    Sources/MacUtilsApp/Resources/ru.lproj/Localizable.strings >/dev/null
+plutil -lint Sources/MacUtilsApp/Resources/*.lproj/*.strings >/dev/null
+
+# A key defined twice resolves to its last value, which may not suit every call site.
+for strings_file in Sources/MacUtilsApp/Resources/*.lproj/*.strings; do
+    duplicates="$(grep -oE '^"[^"]+"' "$strings_file" | sort | uniq -d)"
+    if [[ -n "$duplicates" ]]; then
+        print -u2 "Repeated keys in $strings_file:"
+        print -u2 "$duplicates"
+        failures+=1
+    fi
+done
 
 if (( failures > 0 )); then
     exit 1

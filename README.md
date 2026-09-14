@@ -79,6 +79,7 @@ The key now runs the whole script from any application. The built-in **Help** ta
 - [Release operations](docs/RELEASING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Changelog](CHANGELOG.md)
+- [v1.2.1 release notes](docs/releases/v1.2.1.md)
 - [v1.2.0 release notes](docs/releases/v1.2.0.md)
 - [v1.1.0 release notes](docs/releases/v1.1.0.md)
 - [v1.0.0 release notes](docs/releases/v1.0.0.md)

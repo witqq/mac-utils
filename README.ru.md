@@ -79,6 +79,7 @@ Mac Utils — нативное приложение в строке меню mac
 - [Выпуск релизов](docs/RELEASING.ru.md)
 - [Правила поведения](CODE_OF_CONDUCT.md)
 - [Список изменений](CHANGELOG.md)
+- [Release notes v1.2.1](docs/releases/v1.2.1.ru.md)
 - [Release notes v1.2.0](docs/releases/v1.2.0.ru.md)
 - [Release notes v1.1.0](docs/releases/v1.1.0.ru.md)
 - [Release notes v1.0.0](docs/releases/v1.0.0.ru.md)

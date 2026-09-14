@@ -37,7 +37,7 @@ The status shown below the switch is read from macOS. If approval is required, s
 - **Mirror** shows the content of another display. While a display mirrors another one, macOS runs both in a shared mode. When **Extend display** or **Set main display** takes a display out of mirroring, Mac Utils returns it to its own default mode in the same operation, so a rotated (portrait) display keeps its own orientation and resolution.
 - **Toggle by State** reads a current value. It runs **Then** when the value matches and **Otherwise** when it does not.
 
-The menu bar popover lists each connected display, its current role, and resolution. Its **Main**, **Extend**, and **Mirror** controls execute the same registered actions used by scripts.
+The menu bar popover lists each connected display, its current role, and resolution. Its **Main**, **Extend**, and **Mirror** controls execute the same registered actions used by scripts. The popover opens under the menu bar icon and closes when you press Escape, select the icon again, or click anywhere outside it.
 
 ## Build a script visually
 

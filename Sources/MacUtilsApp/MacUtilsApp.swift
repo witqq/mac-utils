@@ -49,10 +49,11 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
         statusItem = item
 
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(
-            rootView: LaunchStatusView(message: launchText("status.loading"))
+        popover.contentViewController = MenuBarPopover.contentController(
+            for: LaunchStatusView(message: launchText("status.loading"))
         )
     }
+
 
     private func setUpProductionUI(options: AppLaunchOptions) {
         do {
@@ -93,16 +94,16 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
             )
             shortcutCoordinator = coordinator
             self.model = model
-            popover.contentViewController = NSHostingController(
-                rootView: MenuBarRootView(model: model) { [weak self] in self?.showSettings() }
+            popover.contentViewController = MenuBarPopover.contentController(
+                for: MenuBarRootView(model: model) { [weak self] in self?.showSettings() }
             )
             Task {
                 await model.start()
                 await runUIHooks(options: options, model: model)
             }
         } catch {
-            popover.contentViewController = NSHostingController(
-                rootView: LaunchStatusView(message: launchText.error(error))
+            popover.contentViewController = MenuBarPopover.contentController(
+                for: LaunchStatusView(message: launchText.error(error))
             )
         }
     }
@@ -202,9 +203,27 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
     @objc private func togglePopover(_ sender: NSStatusBarButton) {
         if popover.isShown {
             popover.performClose(sender)
-        } else {
-            popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+            return
         }
+        popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+        // An accessory application stays inactive while its popover opens, so the popover window
+        // never becomes key and the keyboard cannot reach it, including Escape to close it.
+        NSApplication.shared.activate()
+        popover.contentViewController?.view.window?.makeKey()
+    }
+}
+
+enum MenuBarPopover {
+    /// Wraps popover content in a hosting controller that publishes its size.
+    ///
+    /// `NSPopover` places itself next to the status item using its content size. A hosting
+    /// controller reports a zero preferred size unless it is asked to publish one, and the popover
+    /// then opens as a panel detached from the menu bar icon instead of hanging under it.
+    @MainActor
+    static func contentController(for view: some View) -> NSHostingController<some View> {
+        let controller = NSHostingController(rootView: view)
+        controller.sizingOptions = [.preferredContentSize]
+        return controller
     }
 }
 

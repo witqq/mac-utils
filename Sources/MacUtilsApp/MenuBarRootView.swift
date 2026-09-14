@@ -1,5 +1,6 @@
 import AppKit
 import MacUtilsCore
+import MacUtilsSystem
 import SwiftUI
 
 struct MenuBarRootView: View {
@@ -47,7 +48,9 @@ struct MenuBarRootView: View {
                 Button(text("menu.settings"), action: onOpenSettings)
                     .help(text("menu.settings"))
                 Spacer()
-                Button(text("menu.quit")) { NSApplication.shared.terminate(nil) }
+                Button(text.format("menu.quit", SystemEnvironment.productName)) {
+                    NSApplication.shared.terminate(nil)
+                }
             }
         }
         .padding(14)
