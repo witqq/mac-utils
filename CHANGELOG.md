@@ -2,6 +2,15 @@
 
 All notable public changes to Mac Utils are recorded here.
 
+## 1.2.1 — 2026-09-14
+
+### Fixed
+
+- The menu bar popover opens attached under its status item instead of as a panel detached from the menu bar, and it takes keyboard focus, so Escape closes it without the mouse. Its content now reports its own size, which is what `NSPopover` uses to place itself.
+- The Quit control in the menu bar popover names the application instead of showing a raw format specifier. The quit label was defined twice in each localization catalog, and the repeated definition won.
+
+See [v1.2.1 release notes](docs/releases/v1.2.1.md).
+
 ## 1.2.0 — 2026-09-12
 
 ### Added

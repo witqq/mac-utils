@@ -17,7 +17,6 @@
 "menu.extend" = "Extend";
 "menu.mirror" = "Mirror";
 "menu.settings" = "Settings…";
-"menu.quit" = "Quit Mac Utils";
 "menu.main.help" = "Make this the main display, where the menu bar and new windows appear.";
 "menu.extend.help" = "Use this display as additional desktop space instead of mirroring.";
 "menu.mirror.help" = "Show the same content as another display.";

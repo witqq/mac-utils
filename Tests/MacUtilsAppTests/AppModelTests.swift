@@ -592,6 +592,46 @@ func directOnlyCatalogsHaveMatchingCompleteKeysAndFormatArguments() throws {
 }
 #endif
 
+@Test
+func noLocalizationCatalogDefinesTheSameKeyTwice() throws {
+    // A repeated key is resolved to its last value, which may not suit every call site.
+    for locale in ["en", "ru"] {
+        for table in ["Localizable", "DirectOnly"] {
+            let url = try #require(Bundle.module.url(
+                forResource: "\(locale).lproj/\(table)",
+                withExtension: "strings"
+            ))
+            let keys = try String(contentsOf: url, encoding: .utf8)
+                .matches(of: /^"([^"]+)"/.anchorsMatchLineEndings())
+                .map { String($0.output.1) }
+            let duplicates = Set(keys.filter { key in keys.filter { $0 == key }.count > 1 })
+            #expect(duplicates.isEmpty, "\(locale)/\(table) repeats \(duplicates.sorted())")
+        }
+    }
+}
+
+@Test @MainActor
+func theQuitControlsNameTheApplicationInsteadOfShowingAFormatSpecifier() throws {
+    for language in [AppLanguage.english, .russian] {
+        let label = AppText(language: language)
+            .format("menu.quit", SystemEnvironment.productName)
+        #expect(label.contains(SystemEnvironment.productName))
+        #expect(!label.contains("%@"))
+    }
+}
+
+@Test @MainActor
+func menuBarPopoverContentPublishesItsSizeSoThePopoverCanAnchorToTheStatusItem() throws {
+    // A zero preferred size makes NSPopover open as a panel detached from the menu bar icon.
+    let controller = MenuBarPopover.contentController(
+        for: Color.clear.frame(width: 390, height: 183)
+    )
+    controller.view.layoutSubtreeIfNeeded()
+
+    #expect(controller.sizingOptions.contains(.preferredContentSize))
+    #expect(controller.preferredContentSize == CGSize(width: 390, height: 183))
+}
+
 @Test @MainActor
 func applicationMenuProvidesStandardWindowAndQuitShortcuts() throws {
     let menu = ApplicationMenuFactory.make(text: AppText(language: .english))
