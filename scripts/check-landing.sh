@@ -7,7 +7,7 @@ landing="$dist/index.html"
 
 for file in source/report.md source/report.ru.md source/assets/app-icon.png source/assets/og-image.png \
   source/assets/builder-en.webp source/assets/builder-ru.webp source/assets/shortcuts-en.webp \
-  source/assets/shortcuts-ru.webp dist/index.html dist/assets/app-icon.png dist/assets/og-image.png; do
+  source/assets/shortcuts-ru.webp dist/index.html dist/assets/app-icon.png dist/assets/og-image.png dist/robots.txt dist/sitemap.xml; do
   [[ -s "$repo_root/website/$file" ]] || { print -u2 "Missing landing file: website/$file"; exit 1; }
 done
 
@@ -36,7 +36,11 @@ end
 errors << "Download links must point to the latest GitHub release" unless html.include?('href="https://github.com/witqq/mac-utils/releases/latest"')
 errors << "The App Store call to action must stay a plain 'coming soon' note until a product URL exists" if html.match?(/href="https:\/\/apps\.apple\.com/)
 errors << "Landing must contain the Made with Moira attribution" unless html.match?(/<a\b[^>]*href="https:\/\/moira-mcp\.com\/"[^>]*>(?:(?!<\/a>).)*Made with Moira/m)
-errors << "Landing must declare its canonical URL and social preview" unless html.include?('rel="canonical" href="https://mac-utils.witqq.dev/"') && html.include?('property="og:image" content="https://mac-utils.witqq.dev/assets/og-image.png"')
+social_image = html[%r{property="og:image" content="https://mac-utils\.witqq\.dev/(assets/og-image\.[0-9a-f]{12}\.png)"}, 1]
+errors << "Landing must declare its canonical URL and social preview" unless html.include?('rel="canonical" href="https://mac-utils.witqq.dev/"') && social_image && File.file?(File.join(dist, social_image))
+errors << "Landing HTML exceeds what search crawlers read" if html.bytesize > 2_097_152
+errors << "robots.txt must name the absolute sitemap" unless File.read(File.join(dist, "robots.txt")).include?("Sitemap: https://mac-utils.witqq.dev/sitemap.xml\n")
+errors << "sitemap.xml must list the landing" unless File.read(File.join(dist, "sitemap.xml")).include?("<loc>https://mac-utils.witqq.dev/</loc>")
 abort errors.join("\n") unless errors.empty?
-puts "Landing valid: agentic-report build, EN/RU variants, local runtime assets, HTTPS links, GitHub download, Made with Moira attribution, canonical and social metadata."
+puts "Landing valid: agentic-report build, EN/RU variants, local runtime assets, HTTPS links, GitHub download, Made with Moira attribution, canonical and social metadata, robots.txt and sitemap.xml."
 RUBY
