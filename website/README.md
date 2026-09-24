@@ -17,9 +17,12 @@ Rebuild after any change to `source/`:
 ./scripts/check-release-assets.sh
 ```
 
-`build-landing.sh` runs the pinned `agentic-report@0.14.0` release with `--format directory`, refuses a
-build with warnings, copies the unhashed icon and social preview into `dist/assets/`, and injects the
-canonical URL, favicon, theme color, and Open Graph tags that the generator does not own.
+`build-landing.sh` runs the pinned `agentic-report@0.17.0` release with `--format directory` and refuses a
+build with warnings. `source/report.md` declares `url: https://mac-utils.witqq.dev/` and
+`image: assets/og-image.png`, so the generator writes the canonical link, Open Graph and Twitter tags with
+a content-hashed social image. The script copies the unhashed icon and social preview into `dist/assets/`,
+injects the favicon and theme color that the generator does not own, and runs `agentic-report sitemap`,
+which writes `dist/sitemap.xml` and a `dist/robots.txt` naming it from the page's canonical URL.
 
 To refresh the captures, build the Direct Debug app, then run it with `--screenshot-fixture
 --configuration-file website/source/fixtures/landing-<en|ru>.json --settings-tab <scripts|shortcuts>
@@ -65,4 +68,4 @@ infra-tools status mac-utils --server witqq.ru --remote-dir /opt/mac-utils
 
 After every landing or product-link change, verify trusted TLS, `/health`, both languages, desktop and
 mobile layout, the GitHub repository and DMG downloads, and that the served `index.html` matches the
-committed `dist/index.html`.
+committed `dist/index.html`, and that `/robots.txt` and `/sitemap.xml` are served.

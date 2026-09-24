@@ -3,6 +3,8 @@ contractVersion: 1
 title: Mac Utils — one key runs your whole script
 description: Build scripts from ready-made macOS actions in a menu bar app and run each script from any application with one global keyboard shortcut.
 language: en
+url: https://mac-utils.witqq.dev/
+image: assets/og-image.png
 localizations:
   ru: report.ru.md
 theme: dark
