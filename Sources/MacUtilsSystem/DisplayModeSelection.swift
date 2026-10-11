@@ -1,3 +1,5 @@
+import MacUtilsCore
+
 /// One entry of a display's mode catalog, reduced to the facts the selection rule needs.
 struct DisplayModeCandidate: Equatable, Sendable {
     /// Position in the catalog as reported by the system; used as the deterministic tie-break.
@@ -16,6 +18,17 @@ struct DisplayModeCandidate: Equatable, Sendable {
 /// default, then its native mode. When the best candidate is already current, or when the catalog
 /// offers neither flag, nothing is selected and the display keeps its current mode.
 enum DisplayModeSelection {
+    static func matchingCandidateIndex(for saved: DisplayMode, in modes: [DisplayMode]) -> Int? {
+        guard saved.isValid else { return nil }
+        let matches = modes.indices.filter { index in
+            let mode = modes[index]
+            return mode.isValid && mode.width == saved.width && mode.height == saved.height
+                && mode.pixelWidth == saved.pixelWidth && mode.pixelHeight == saved.pixelHeight
+                && abs(mode.refreshRate - saved.refreshRate) < 0.01
+        }
+        return matches.first { modes[$0].ioModeID == saved.ioModeID } ?? matches.first
+    }
+
     static func preferredCandidateIndex(in candidates: [DisplayModeCandidate]) -> Int? {
         let chosen = best(candidates.filter(\.isDefault)) ?? best(candidates.filter(\.isNative))
         guard let chosen, !chosen.isCurrent else { return nil }

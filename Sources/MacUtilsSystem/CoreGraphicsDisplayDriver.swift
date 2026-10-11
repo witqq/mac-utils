@@ -34,7 +34,10 @@ struct CoreGraphicsDisplayDriver: DisplayConfigurationDriver {
                     height: Int32(bounds.height)
                 ),
                 role: role,
-                isActive: CGDisplayIsActive(rawID) != 0
+                isActive: CGDisplayIsActive(rawID) != 0,
+                mode: CGDisplayCopyDisplayMode(rawID).map(portableMode),
+                rotation: CGDisplayRotation(rawID),
+                isInMirrorSet: CGDisplayIsInMirrorSet(rawID) != 0
             )
         }
     }
@@ -44,14 +47,44 @@ struct CoreGraphicsDisplayDriver: DisplayConfigurationDriver {
         let rawDisplays = try onlineDisplayIDs()
         let stableIDs = try stableIDMap(for: rawDisplays)
         let rawByStableID = Dictionary(uniqueKeysWithValues: stableIDs.map { ($0.value, $0.key) })
+        DisplayDiagnostics.shared.record("native.mapping", operations: operations,
+            details: Dictionary(uniqueKeysWithValues: rawByStableID.map { ($0.key.rawValue, String($0.value)) }))
         // Mode catalogs are read before the transaction opens so the transaction only applies
         // decisions that were already made.
         var restoredModes: [DisplayID: CGDisplayMode] = [:]
-        for case let .restoreDefaultMode(display) in operations {
+        for operation in operations {
+            let display: DisplayID
+            let saved: DisplayMode?
+            switch operation {
+            case let .restoreDefaultMode(id): display = id; saved = nil
+            case let .restoreMode(id, mode, rotation):
+                display = id
+                saved = mode
+                if let rotation, let rawID = rawByStableID[id], CGDisplayRotation(rawID) != rotation {
+                    throw DisplayManagerError.systemFailure("Rotation changed for \(id); restore it in macOS Displays settings")
+                }
+            default: continue
+            }
             guard let rawID = rawByStableID[display] else {
                 throw DisplayManagerError.displayNotFound(display)
             }
-            restoredModes[display] = preferredMode(for: rawID)
+            let catalog = (CGDisplayCopyAllDisplayModes(rawID,
+                [kCGDisplayShowDuplicateLowResolutionModes: kCFBooleanTrue] as CFDictionary) as? [CGDisplayMode]) ?? []
+            let catalogDetails = catalog.map { mode in
+                "\(portableMode(mode)); flags=\(mode.ioFlags); desktopGUI=\(mode.isUsableForDesktopGUI())"
+            }.joined(separator: "\n")
+            DisplayDiagnostics.shared.record("native.mode-catalog", details: [
+                "display": display.rawValue, "rawID": String(rawID), "catalog": catalogDetails,
+            ])
+            let matched = saved.flatMap { matchingMode($0, in: catalog) }
+            let chosen = matched ?? preferredMode(for: rawID, modes: catalog)
+            restoredModes[display] = chosen
+            DisplayDiagnostics.shared.record("native.mode-selection", details: [
+                "display": display.rawValue, "rawID": String(rawID),
+                "rotation": String(CGDisplayRotation(rawID)),
+                "saved": String(describing: saved), "chosen": String(describing: chosen.map(portableMode)),
+                "reason": matched != nil ? "saved-mode-matched" : saved == nil ? "no-saved-mode-default-fallback" : "saved-mode-unavailable-default-fallback",
+            ])
         }
 
         var configuration: CGDisplayConfigRef?
@@ -89,7 +122,7 @@ struct CoreGraphicsDisplayDriver: DisplayConfigurationDriver {
                         CGConfigureDisplayMirrorOfDisplay(configuration, rawID, sourceRawID),
                         operation: "set mirroring for \(display)"
                     )
-                case let .restoreDefaultMode(display):
+                case let .restoreDefaultMode(display), let .restoreMode(display, _, _):
                     guard let rawID = rawByStableID[display] else {
                         throw DisplayManagerError.displayNotFound(display)
                     }
@@ -107,19 +140,33 @@ struct CoreGraphicsDisplayDriver: DisplayConfigurationDriver {
             try check(completionResult, operation: "commit transaction")
         } catch {
             if !configurationWasCompleted {
-                CGCancelDisplayConfiguration(configuration)
+                let result = CGCancelDisplayConfiguration(configuration)
+                DisplayDiagnostics.shared.record("native.cancel", details: ["cgError": String(result.rawValue)])
             }
             throw error
         }
     }
 
-    private func preferredMode(for display: CGDirectDisplayID) -> CGDisplayMode? {
-        let options = [kCGDisplayShowDuplicateLowResolutionModes: kCFBooleanTrue] as CFDictionary
-        guard let modes = CGDisplayCopyAllDisplayModes(display, options) as? [CGDisplayMode] else {
-            return nil
-        }
+    private func portableMode(_ mode: CGDisplayMode) -> DisplayMode {
+        DisplayMode(width: mode.width, height: mode.height, pixelWidth: mode.pixelWidth,
+                    pixelHeight: mode.pixelHeight, refreshRate: mode.refreshRate,
+                    ioModeID: mode.ioDisplayModeID)
+    }
+
+    private func matchingMode(_ saved: DisplayMode, in modes: [CGDisplayMode]) -> CGDisplayMode? {
+        guard saved.isValid else { return nil }
+        let usable = modes.filter { $0.isUsableForDesktopGUI() }
+        guard let index = DisplayModeSelection.matchingCandidateIndex(for: saved, in: usable.map(portableMode)) else { return nil }
+        return usable[index]
+    }
+
+    private func preferredMode(for display: CGDirectDisplayID, modes: [CGDisplayMode]) -> CGDisplayMode? {
         let currentModeID = CGDisplayCopyDisplayMode(display)?.ioDisplayModeID
-        let candidates = modes.enumerated().map { index, mode in
+        let rotation = CGDisplayRotation(display)
+        let isPortrait = rotation == 90 || rotation == 270
+        let candidates = modes.enumerated().filter { _, mode in
+            mode.isUsableForDesktopGUI() && (mode.width == mode.height || (mode.height > mode.width) == isPortrait)
+        }.map { index, mode in
             DisplayModeCandidate(
                 index: index,
                 pixelCount: mode.pixelWidth * mode.pixelHeight,
@@ -175,6 +222,7 @@ struct CoreGraphicsDisplayDriver: DisplayConfigurationDriver {
     }
 
     private func check(_ result: CGError, operation: String) throws {
+        DisplayDiagnostics.shared.record("native.result", details: ["operation": operation, "cgError": String(result.rawValue)])
         guard result == .success else {
             throw DisplayManagerError.systemFailure("\(operation) returned CGError \(result.rawValue)")
         }

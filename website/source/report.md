@@ -1,7 +1,7 @@
 ---
 contractVersion: 1
 title: Mac Utils — one key runs your whole script
-description: Build scripts from ready-made macOS actions in a menu bar app and run each script from any application with one global keyboard shortcut.
+description: Analyze disks with a saved size-sorted folder tree, move selected items to Trash, and automate macOS actions with global keyboard shortcuts.
 language: en
 url: https://mac-utils.witqq.dev/
 image: assets/og-image.png
@@ -19,8 +19,9 @@ tokens:
 
 # One key runs your whole script
 
-Mac Utils is a native macOS menu bar app. Compose a script from ready-made actions with the mouse,
-branch on the live system state, assign a global keyboard shortcut, and press it from any application.
+Mac Utils is a native macOS menu bar app with a full-size utility window. Analyze your disk and decide
+what to remove, or compose a script from ready-made actions and run it from any application with one
+global keyboard shortcut.
 
 ::::actions{placement="edge"}
 ::action[Download for macOS]{href="https://github.com/witqq/mac-utils/releases/latest" kind="primary" effect="magnetic"}
@@ -42,6 +43,41 @@ subset of actions; its product link appears here once Apple publishes it.
 :::
 ::::::
 
+::::::section{title="See what takes space. Decide what goes." id="storage" nav="Storage" recipe="story" media="natural" media-fit="contain" media-aspect="natural"}
+:::lead
+Choose a disk or folder, analyze it once, then explore the saved tree. Expand folders, sort siblings by
+logical or allocated size, and focus a branch without scanning it again. Resize the window or use full
+screen when you need more room.
+:::
+
+![Storage analysis of a disposable demo folder, with Downloads expanded and folders sorted largest first](assets/storage-en.webp)
+
+::::cards
+:::card{title="A tree you can keep browsing"}
+Folders load saved children in pages. The largest-files view and optional size map help you find large
+items; reopening a saved location restores its dated result. Refresh explicitly when you want a new scan.
+:::
+:::card{title="Manual cleanup, with confirmation"}
+Reveal an item in Finder or move your selection to the system Trash. Confirming a folder includes all
+its contents. Successful moves update the saved tree without restarting the scan; restore items in
+Finder's Trash until you empty it. No automatic junk deletion or cache purge.
+:::
+:::card{title="macOS tools within reach"}
+Open macOS Storage recommendations, Downloads or Trash from the utility. Disk Access explains the
+optional Full Disk Access permission; Mac Utils cannot grant it for you or bypass protected folders.
+:::
+::::
+
+:::disclosure{title="What the scan and sizes mean" open="false"}
+The first scan can take time. Progress shows its phase, elapsed time, processed objects and rate; a
+catalog percentage appears only when an approximate volume count is available. Supported APFS disk
+roots use the filesystem catalog; folders use metadata traversal. File contents are not read.
+Protected records can be omitted, so catalog coverage remains unverified and analysis notes matter.
+APFS files can share blocks: allocated totals are estimates, not a promise of space you can reclaim.
+The screenshot uses disposable demo files, not a complete disk scan.
+:::
+::::::
+
 ::::::section{title="What you can automate today" id="actions" nav="Actions" composition="flow" section-density="editorial" surface="grid" transition="stagger" choreography="cascade"}
 :::lead
 The catalog of actions grows with every release. Every action is registered by the app itself, so scripts
@@ -51,7 +87,8 @@ never run shell commands or downloaded code.
 ::::cards
 :::card{title="Display roles"}
 Make a display the main one, extend the desktop onto it, or mirror it from another display. A rotated
-display keeps its own resolution when it leaves mirroring.
+display restores its remembered supported mode when it leaves mirroring. Independent display positions
+are remembered across restarts, preserving left/right relationships when the main display changes.
 :::
 :::card{title="Toggle by State"}
 Read the live mode of a display and run one branch when it matches and another when it does not. One key
@@ -119,8 +156,9 @@ MIT-licensed Swift 6 code with tests, CI, and a guide for adding your own action
 
 ::::::section{title="Private by design" id="privacy" nav="Privacy" recipe="evidence"}
 :::lead
-Mac Utils stores scripts and shortcuts only in its local app container. It has no account, analytics,
-advertising, cloud service, or network client, and it collects no personal or usage data.
+Mac Utils keeps scripts, shortcuts, saved disk/folder access, scan metadata and bounded diagnostics
+locally. Scan caches contain names, paths and sizes, not file contents. The app has no account,
+analytics, advertising, cloud service or network client, and uploads nothing automatically.
 :::
 
 ::::cards

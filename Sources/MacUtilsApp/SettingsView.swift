@@ -1,21 +1,33 @@
 import AppKit
+import Combine
 import Foundation
 import MacUtilsCore
+import MacUtilsSystem
 import SwiftUI
+
+enum UtilityWindowSize {
+    static let minimum = NSSize(width: 960, height: 720)
+    static let defaultSize = NSSize(width: 1_180, height: 850)
+    static let maximum = NSSize(width: 4_000, height: 3_000)
+}
 
 struct SettingsView: View {
     @ObservedObject var model: AppModel
-    @State private var selectedTab = SettingsTab.scripts
+    @ObservedObject private var navigation: UtilityNavigation
+    @StateObject private var storage: StorageModel
     @State private var showsOnboarding: Bool
     private let persistsOnboarding: Bool
 
     init(
         model: AppModel,
         onboardingOverride: Bool? = nil,
-        initialTab: SettingsTab = .scripts
+        initialTab: SettingsTab = .scripts,
+        navigation: UtilityNavigation? = nil,
+        storage: StorageModel? = nil
     ) {
         self.model = model
-        _selectedTab = State(initialValue: initialTab)
+        self.navigation = navigation ?? UtilityNavigation(selectedTab: initialTab)
+        _storage = StateObject(wrappedValue: storage ?? StorageModel())
         persistsOnboarding = onboardingOverride == nil
         _showsOnboarding = State(initialValue: onboardingOverride
             ?? !UserDefaults.standard.bool(forKey: "completedOnboarding"))
@@ -24,18 +36,36 @@ struct SettingsView: View {
     private var text: AppText { model.text }
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Picker("", selection: $selectedTab) {
-                    Label(text("tab.general"), systemImage: "gearshape").tag(SettingsTab.general)
+        HStack(spacing: 0) {
+            List(selection: $navigation.selectedTab) {
+                Section(text("navigation.utilities")) {
+                    Label(text("tab.storage"), systemImage: "internaldrive").tag(SettingsTab.storage)
+                        .help(text("tab.storage.help")).accessibilityHint(text("tab.storage.help"))
+                        .accessibilityIdentifier("navigate-storage")
                     Label(text("tab.scripts"), systemImage: "square.stack.3d.up").tag(SettingsTab.scripts)
+                        .help(text("tab.scripts.help")).accessibilityHint(text("tab.scripts.help"))
+                        .accessibilityIdentifier("navigate-scripts")
                     Label(text("tab.shortcuts"), systemImage: "command").tag(SettingsTab.shortcuts)
-                    Label(text("tab.help"), systemImage: "questionmark.circle").tag(SettingsTab.help)
+                        .help(text("tab.shortcuts.help")).accessibilityHint(text("tab.shortcuts.help"))
+                        .accessibilityIdentifier("navigate-shortcuts")
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 560)
-                .accessibilityIdentifier("settings-navigation")
+                Section(text("navigation.application")) {
+                    Label(text("tab.general"), systemImage: "gearshape").tag(SettingsTab.general)
+                        .help(text("tab.general.help")).accessibilityHint(text("tab.general.help"))
+                        .accessibilityIdentifier("navigate-general")
+                    Label(text("tab.help"), systemImage: "questionmark.circle").tag(SettingsTab.help)
+                        .help(text("tab.help.help")).accessibilityHint(text("tab.help.help"))
+                        .accessibilityIdentifier("navigate-help")
+                }
+            }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .frame(width: 190)
+            .accessibilityIdentifier("settings-navigation")
+            Divider()
+            VStack(spacing: 0) {
+            HStack {
                 Spacer()
                 Picker(text("language.picker"), selection: languageBinding) {
                     ForEach(AppLanguage.allCases) { language in
@@ -45,24 +75,29 @@ struct SettingsView: View {
                 .pickerStyle(.menu)
                 .frame(width: 180)
                 .help(text("language.help"))
+                .accessibilityHint(text("language.help"))
                 .accessibilityIdentifier("language-picker")
-            }
+            }.padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 6)
 
             Group {
-                switch selectedTab {
+                switch navigation.selectedTab {
+                case .storage:
+                StorageView(model: storage, text: text)
                 case .general:
                 GeneralSettingsView(model: model)
                 case .scripts:
                 ScriptSettingsView(model: model)
                 case .shortcuts:
                 ShortcutSettingsView(model: model)
+                    .padding(16)
                 case .help:
                 HelpView(text: text)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
-        .padding(16)
-        .frame(minWidth: 960, minHeight: 680)
+        .frame(minWidth: UtilityWindowSize.minimum.width, minHeight: UtilityWindowSize.minimum.height)
         .environment(\.locale, Locale(identifier: model.language.resourceCode))
         .background(WindowTitleSetter(title: text("app.settings.title")))
         .sheet(isPresented: $showsOnboarding) {
@@ -71,7 +106,7 @@ struct SettingsView: View {
                 onContinue: completeOnboarding,
                 onOpenHelp: {
                     completeOnboarding()
-                    selectedTab = .help
+                    navigation.selectedTab = .help
                 }
             )
         }
@@ -88,10 +123,17 @@ struct SettingsView: View {
 }
 
 enum SettingsTab: String, Hashable {
+    case storage
     case general
     case scripts
     case shortcuts
     case help
+}
+
+@MainActor
+final class UtilityNavigation: ObservableObject {
+    @Published var selectedTab: SettingsTab
+    init(selectedTab: SettingsTab = .scripts) { self.selectedTab = selectedTab }
 }
 
 private struct GeneralSettingsView: View {
@@ -103,11 +145,16 @@ private struct GeneralSettingsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Text(text("general.title")).font(.largeTitle.bold())
                 Text(text("general.description")).font(.title3).foregroundStyle(.secondary)
+                Button(text("general.displayLogs")) { _ = StorageNativeTools.openDisplayLogs() }
+                    .help(text("general.displayLogs.help"))
+                    .accessibilityHint(text("general.displayLogs.help"))
+                    .accessibilityIdentifier("open-display-logs")
 
                 VStack(alignment: .leading, spacing: 14) {
                     Toggle(text("general.loginItem.title"), isOn: loginItemBinding)
                         .toggleStyle(.switch)
                         .help(text("general.loginItem.help"))
+                        .accessibilityHint(text("general.loginItem.help"))
                         .accessibilityIdentifier("launch-at-login-toggle")
                     Text(text("general.loginItem.description"))
                         .foregroundStyle(.secondary)
@@ -128,11 +175,13 @@ private struct GeneralSettingsView: View {
                             model.openLoginItemsSettings()
                         }
                         .help(text("general.loginItem.openSettings.help"))
+                        .accessibilityHint(text("general.loginItem.openSettings.help"))
                         .accessibilityIdentifier("open-login-items-settings")
                         Button(text("general.loginItem.refresh")) {
                             model.refreshLoginItemStatus()
                         }
                         .help(text("general.loginItem.refresh.help"))
+                        .accessibilityHint(text("general.loginItem.refresh.help"))
                     }
                 }
                 .padding(20)
@@ -230,6 +279,8 @@ private struct ScriptSettingsView: View {
                     }
                     .listStyle(.sidebar)
                     .accessibilityIdentifier("scripts-list")
+                    .help(text("scripts.list.help"))
+                    .accessibilityHint(text("scripts.list.help"))
                     if model.scripts.isEmpty, selectedID == nil {
                         ContentUnavailableView(
                             text("scripts.empty.title"),
@@ -240,12 +291,14 @@ private struct ScriptSettingsView: View {
                 }
                 HStack {
                     Button(action: newScript) { Image(systemName: "plus") }
-                        .help(text("scripts.new"))
+                        .help(text("scripts.new.help"))
+                        .accessibilityHint(text("scripts.new.help"))
                         .accessibilityLabel(text("scripts.new"))
                         .accessibilityIdentifier("new-script")
                     Button { pendingDeletion = selectedID } label: { Image(systemName: "minus") }
                         .disabled(selectedID == nil)
-                        .help(text("scripts.delete"))
+                        .help(text("scripts.delete.help"))
+                        .accessibilityHint(text("scripts.delete.help"))
                         .accessibilityLabel(text("scripts.delete"))
                 }
                 .padding(.horizontal, 10)
@@ -261,6 +314,9 @@ private struct ScriptSettingsView: View {
                     HStack(spacing: 12) {
                         Text(text("scripts.name")).foregroundStyle(.secondary).frame(width: 84, alignment: .trailing)
                         TextField(text("scripts.name.placeholder"), text: $draftName)
+                            .help(text("scripts.name.help"))
+                            .accessibilityLabel(text("scripts.name"))
+                            .accessibilityHint(text("scripts.name.help"))
                             .accessibilityIdentifier("script-name")
                     }
                     HStack(spacing: 12) {
@@ -272,6 +328,7 @@ private struct ScriptSettingsView: View {
                         .frame(width: 280)
                         .labelsHidden()
                         .help(text("scripts.editor.help"))
+                        .accessibilityHint(text("scripts.editor.help"))
                         .accessibilityIdentifier("editor-mode")
                         Spacer()
                     }
@@ -285,6 +342,9 @@ private struct ScriptSettingsView: View {
                             TextEditor(text: $draftSource)
                                 .font(.system(.body, design: .monospaced))
                                 .border(.separator)
+                                .help(text("scripts.dsl.help"))
+                                .accessibilityLabel(text("scripts.editor.text"))
+                                .accessibilityHint(text("scripts.dsl.help"))
                                 .accessibilityIdentifier("dsl-editor")
                             Text(text("scripts.dsl.help")).font(.caption).foregroundStyle(.secondary)
                         }
@@ -295,6 +355,7 @@ private struct ScriptSettingsView: View {
                 HStack {
                     Button(text("scripts.validate")) { validateCurrentSource() }
                         .help(text("scripts.validate.help"))
+                        .accessibilityHint(text("scripts.validate.help"))
                         .accessibilityLabel(text("scripts.validate"))
                     Button(text("scripts.save")) {
                         Task {
@@ -307,6 +368,7 @@ private struct ScriptSettingsView: View {
                     }
                     .keyboardShortcut("s", modifiers: .command)
                     .help(text("scripts.save.help"))
+                    .accessibilityHint(text("scripts.save.help"))
                     .accessibilityLabel(text("scripts.save"))
                     .accessibilityIdentifier("save-script")
                     Spacer()
@@ -337,7 +399,10 @@ private struct ScriptSettingsView: View {
                     if !model.scripts.contains(where: { $0.id == id }) { newScript() }
                 }
             }
+            .help(text("scripts.delete.help"))
+            .accessibilityHint(text("scripts.delete.help"))
             Button(text("common.cancel"), role: .cancel) { pendingDeletion = nil }
+                .help(text("common.cancel.help")).accessibilityHint(text("common.cancel.help"))
         } message: {
             Text(text.format(
                 "scripts.delete.message",
@@ -446,13 +511,15 @@ private struct ShortcutSettingsView: View {
                     }
                     .frame(maxWidth: 320)
                     .help(text("shortcuts.script.help"))
+                    .accessibilityHint(text("shortcuts.script.help"))
                     .accessibilityIdentifier("shortcut-script-picker")
                     ShortcutRecorder(shortcut: $recordedShortcut, text: text).frame(width: 190)
                     Button(editingBindingID == nil ? text("shortcuts.assign") : text("shortcuts.saveChange")) {
                         saveBinding()
                     }
                     .disabled(selectedScriptID == nil || recordedShortcut == nil)
-                    .help(text("shortcuts.assign.help"))
+                    .help(text(editingBindingID == nil ? "shortcuts.assign.help" : "shortcuts.saveChange.help"))
+                    .accessibilityHint(text(editingBindingID == nil ? "shortcuts.assign.help" : "shortcuts.saveChange.help"))
                     .accessibilityLabel(editingBindingID == nil
                         ? text("shortcuts.assign") : text("shortcuts.saveChange"))
                     .accessibilityIdentifier("save-shortcut")
@@ -460,6 +527,7 @@ private struct ShortcutSettingsView: View {
                         Button(text("shortcuts.cancelEdit"), action: cancelEditing)
                             .accessibilityLabel(text("shortcuts.cancelEdit"))
                             .help(text("shortcuts.cancelEdit.help"))
+                            .accessibilityHint(text("shortcuts.cancelEdit.help"))
                     }
                 }
 
@@ -474,11 +542,13 @@ private struct ShortcutSettingsView: View {
                                 Spacer()
                                 Button(text("shortcuts.edit")) { beginEditing(binding) }
                                     .help(text("shortcuts.edit.help"))
+                                    .accessibilityHint(text("shortcuts.edit.help"))
                                     .accessibilityLabel(text("shortcuts.edit"))
                                     .accessibilityIdentifier("edit-shortcut")
                                 Button(text("common.remove"), role: .destructive) { pendingRemoval = binding.id }
                                     .accessibilityLabel(text("common.remove"))
                                     .help(text("shortcuts.remove.help"))
+                                    .accessibilityHint(text("shortcuts.remove.help"))
                                     .accessibilityIdentifier("remove-shortcut")
                             }
                             .accessibilityIdentifier("shortcut-row-\(binding.id.uuidString)")
@@ -518,7 +588,10 @@ private struct ShortcutSettingsView: View {
                     if editingBindingID == id { cancelEditing() }
                 }
             }
+            .help(text("shortcuts.remove.help"))
+            .accessibilityHint(text("shortcuts.remove.help"))
             Button(text("common.cancel"), role: .cancel) { pendingRemoval = nil }
+                .help(text("common.cancel.help")).accessibilityHint(text("common.cancel.help"))
         } message: { Text(text("shortcuts.remove.message")) }
     }
 
@@ -561,6 +634,14 @@ private struct HelpView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Text(text("help.title")).font(.largeTitle.bold())
                 Text(text("help.intro")).font(.title3).foregroundStyle(.secondary)
+                Text(text("help.controls.body")).foregroundStyle(.secondary)
+                helpSection(text("help.storage.title"), rows: [
+                    ("internaldrive", text("help.storage.scan")),
+                    ("clock.arrow.circlepath", text("help.storage.cache")),
+                    ("chart.bar", text("help.storage.sizes")),
+                    ("trash", text("help.storage.trash")),
+                    ("gearshape", text("help.storage.manual")),
+                ])
                 helpSection(text("help.quickStart"), rows: [
                     ("1.circle.fill", text("help.step1")),
                     ("2.circle.fill", text("help.step2")),
@@ -617,11 +698,13 @@ private struct OnboardingView: View {
             HStack(alignment: .top, spacing: 14) {
                 onboardingCard("square.stack.3d.up.fill", "onboarding.visual.title", "onboarding.visual.body")
                 onboardingCard("command", "onboarding.hotkey.title", "onboarding.hotkey.body")
-                onboardingCard("questionmark.circle.fill", "onboarding.learn.title", "onboarding.learn.body")
+                onboardingCard("internaldrive.fill", "onboarding.storage.title", "onboarding.storage.body")
             }
             HStack {
                 Button(text("onboarding.openHelp"), action: onOpenHelp)
+                    .help(text("onboarding.openHelp.help")).accessibilityHint(text("onboarding.openHelp.help"))
                 Button(text("onboarding.continue"), action: onContinue)
+                    .help(text("onboarding.continue.help")).accessibilityHint(text("onboarding.continue.help"))
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("finish-onboarding")

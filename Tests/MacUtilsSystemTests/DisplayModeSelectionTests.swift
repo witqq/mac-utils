@@ -1,3 +1,4 @@
+import MacUtilsCore
 @testable import MacUtilsSystem
 import Testing
 
@@ -64,4 +65,16 @@ func equalDefaultModesResolveToTheFirstCatalogEntry() {
     ]
 
     #expect(DisplayModeSelection.preferredCandidateIndex(in: catalog) == 0)
+}
+
+@Test
+func savedModeMatchingPreservesScalingRefreshAndOrientationAcrossCatalogIdentifierChanges() {
+    let saved = DisplayMode(width: 1440, height: 2560, pixelWidth: 1440, pixelHeight: 2560, refreshRate: 144, ioModeID: 44)
+    let changedID = DisplayMode(width: 1440, height: 2560, pixelWidth: 1440, pixelHeight: 2560, refreshRate: 144, ioModeID: 99)
+    let landscape = DisplayMode(width: 2560, height: 1440, pixelWidth: 2560, pixelHeight: 1440, refreshRate: 144, ioModeID: 44)
+    let scaled = DisplayMode(width: 1440, height: 2560, pixelWidth: 2880, pixelHeight: 5120, refreshRate: 144, ioModeID: 44)
+    let slower = DisplayMode(width: 1440, height: 2560, pixelWidth: 1440, pixelHeight: 2560, refreshRate: 60, ioModeID: 44)
+    #expect(DisplayModeSelection.matchingCandidateIndex(for: saved, in: [landscape, scaled, slower, changedID]) == 3)
+    #expect(DisplayModeSelection.matchingCandidateIndex(for: saved, in: [changedID, saved]) == 1)
+    #expect(DisplayModeSelection.matchingCandidateIndex(for: saved, in: [landscape, scaled, slower]) == nil)
 }

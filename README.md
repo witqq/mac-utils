@@ -7,7 +7,7 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/witqq/mac-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/witqq/mac-utils/actions/workflows/ci.yml)
 
-Mac Utils is a native macOS menu bar app for building scripts out of ready-made actions and running each script with one global keyboard shortcut from any application. Compose the steps visually, branch on the live system state, assign a key, and press it wherever you are. The catalog of actions keeps growing: today it covers display roles and layouts, launch at login, and, in the Direct build, closing every notification and refreshing Universal Control.
+Mac Utils is a native macOS menu bar app with storage analysis and reusable automation scripts. Analyze a folder or disk in a resizable, fullscreen-capable window with a proportional size map, dated scan cache and selected-item cleanup through Trash. Compose automation steps visually, branch on live system state and run a script with one global shortcut. Actions cover display roles and layouts and, in the Direct build, closing notifications and refreshing Universal Control; launch at login is a setting.
 
 ## Availability
 
@@ -25,7 +25,8 @@ The Mac App Store product remains marked as pending until Apple publication comp
 - **Scripts.** A script is an ordered list of actions built in a visual editor with typed controls, or written in a small data-only DSL.
 - **Toggle by State.** A script can read a live state and run one branch when it matches and another when it does not, so one key toggles instead of guessing what happened last time.
 - **Global shortcuts.** One native macOS shortcut runs the whole script while any application is active. A conflicting or unavailable replacement leaves the previous shortcut working.
-- **Menu bar only.** Mac Utils lives in the menu bar without a Dock icon, stores its configuration locally, and speaks English, Russian, or the system language.
+- **Storage.** Browse folders and largest files, choose logical or allocated sizes, refresh cached snapshots, and review selected items before moving them to Trash. Native macOS Storage, Downloads and Trash buttons open management surfaces.
+- **Menu bar and utility window.** Mac Utils has no Dock icon. Its menu bar opens a shared window with sidebar navigation for Storage, Scripts, Shortcuts, General and Help. Data stays local; the interface supports English, Russian or the system language.
 
 Scripts can call only actions registered by the application. They cannot execute shell commands or arbitrary downloaded code.
 
@@ -65,6 +66,12 @@ The overlapping-displays icon appears in the menu bar. Open it, select **Setting
 
 The key now runs the whole script from any application. The built-in **Help** tab explains the terms and includes a ready mirror/extend toggle recipe; the [User guide](docs/USER_GUIDE.md) walks through every action.
 
+### Analyze storage
+
+Choose **Analyze Storage…** in the menu bar, then **Choose Disk** for a named mounted volume, including the startup disk, or **Choose Folder…** for a smaller area. Supported APFS volume roots use the public macOS filesystem catalog; folders and unsupported volumes use directory traversal with batched metadata where available. Progress shows the phase, elapsed time, processed objects, average rate and counted sizes. A catalog percentage is explicitly approximate; validation follows it.
+
+The saved tree retains analyzed folders and files at every depth. Expand branches, load more children and sort by logical or allocated size without scanning again. Packages can be browsed; cleanup selects the whole package. The optional **Size Map** follows the focused folder. Catalog results warn that protected-area coverage is unverified, even with no reported skips; the latest tree is saved separately from an earlier complete backup. **Refresh** rescans the selected location; **Move to Trash** requires confirmation and rechecks selected items. Successful moves update the saved tree and known sizes while preserving browsing, without another source scan. **Manage** explains saved-data actions beside their buttons. **Disk Access…** shows how you can enable Full Disk Access in macOS; the app cannot grant it itself. Cached results are historical, allocated sums are not exclusive APFS usage, and moving to Trash does not immediately free space. See the [User guide](docs/USER_GUIDE.md) for navigation, access and cleanup boundaries.
+
 ## Documentation
 
 - [User guide](docs/USER_GUIDE.md)
@@ -101,15 +108,15 @@ XcodeGen 2.46.0 or later is required for project generation. Local archive comma
 
 Core modules:
 
-- `MacUtilsCore` defines actions, typed parameters, scenarios, state providers, and the safe DSL.
-- `MacUtilsSystem` implements the system-facing actions (CoreGraphics display control, Accessibility-based notification dismissal, Continuity service refresh), native Carbon hotkeys, the Service Management login-item adapter, and atomic configuration storage.
-- `MacUtilsApp` composes the registries and presents the menu bar and settings UI.
+- `MacUtilsCore` defines actions, typed parameters, scenarios, state providers, the safe DSL, immutable storage snapshots and pure proportional map layout.
+- `MacUtilsSystem` implements system-facing actions, native hotkeys and login items, display history/diagnostics, metadata scanning, a shared persistent SQLite tree, folder access, bounded scan caches and native Trash/reveal.
+- `MacUtilsApp` composes the registries and interactive storage model, and presents the menu bar and shared utility window.
 
 See [Architecture](docs/ARCHITECTURE.md) before changing module boundaries.
 
 ## Privacy and security
 
-Mac Utils has no analytics, advertising, account system, or network client. Scripts and shortcut assignments are stored in the app’s local Application Support container. See [Privacy](docs/PRIVACY.md) and report vulnerabilities through the private process in [SECURITY.md](SECURITY.md).
+Mac Utils has no analytics, advertising, account system, or network client. Scripts, shortcuts, display history and selected-folder bookmarks stay in local Application Support; storage metadata snapshots stay in local Caches, and display/storage diagnostics in local Logs. Metadata operations disable cloud-placeholder materialization on their worker thread and restore its prior policy afterward; scans do not open file contents. Full Disk Access is an optional broad permission enabled by you in macOS settings. See [Privacy](docs/PRIVACY.md) and report vulnerabilities through the private process in [SECURITY.md](SECURITY.md).
 
 ## License
 

@@ -6,6 +6,7 @@ import SwiftUI
 struct MenuBarRootView: View {
     @ObservedObject var model: AppModel
     let onOpenSettings: () -> Void
+    var onOpenStorage: () -> Void = {}
     private var text: AppText { model.text }
 
     var body: some View {
@@ -23,7 +24,8 @@ struct MenuBarRootView: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 .buttonStyle(.plain)
-                .help(text("menu.refresh"))
+                .help(text("menu.refresh.help"))
+                .accessibilityHint(text("menu.refresh.help"))
                 .accessibilityLabel(text("menu.refresh"))
             }
 
@@ -44,13 +46,24 @@ struct MenuBarRootView: View {
 
             messageArea
             Divider()
+            Button {
+                onOpenStorage()
+            } label: {
+                Label(text("menu.storage"), systemImage: "internaldrive")
+            }
+            .accessibilityIdentifier("open-storage-utility")
+            .help(text("menu.storage.help"))
+            .accessibilityHint(text("menu.storage.help"))
             HStack {
                 Button(text("menu.settings"), action: onOpenSettings)
-                    .help(text("menu.settings"))
+                    .help(text("menu.settings.help"))
+                    .accessibilityHint(text("menu.settings.help"))
                 Spacer()
                 Button(text.format("menu.quit", SystemEnvironment.productName)) {
                     NSApplication.shared.terminate(nil)
                 }
+                .help(text("menu.quit.help"))
+                .accessibilityHint(text("menu.quit.help"))
             }
         }
         .padding(14)
@@ -78,22 +91,27 @@ struct MenuBarRootView: View {
                 }
                 .disabled(display.role == .main)
                 .help(text("menu.main.help"))
+                .accessibilityHint(text("menu.main.help"))
 
                 Button(text("menu.extend")) {
                     Task { await model.extend(display.id) }
                 }
                 .disabled(display.role == .extended || display.role == .main)
                 .help(text("menu.extend.help"))
+                .accessibilityHint(text("menu.extend.help"))
 
                 Menu(text("menu.mirror")) {
                     ForEach(model.displays.filter { $0.id != display.id }, id: \.id) { source in
                         Button(source.name) {
                             Task { await model.mirror(display.id, source: source.id) }
                         }
+                        .help(text.format("menu.mirror.source.help", display.name, source.name))
+                        .accessibilityHint(text.format("menu.mirror.source.help", display.name, source.name))
                     }
                 }
                 .disabled(model.displays.count < 2)
                 .help(text("menu.mirror.help"))
+                .accessibilityHint(text("menu.mirror.help"))
             }
             .controlSize(.small)
         }
@@ -110,7 +128,8 @@ struct MenuBarRootView: View {
                 Spacer()
                 Button { model.dismissMessages() } label: { Image(systemName: "xmark") }
                     .buttonStyle(.plain)
-                    .help(text("message.dismiss"))
+                    .help(text("message.dismiss.help"))
+                    .accessibilityHint(text("message.dismiss.help"))
                     .accessibilityLabel(text("message.dismiss"))
             }
         } else if let notice = model.noticeMessage {
@@ -120,7 +139,8 @@ struct MenuBarRootView: View {
                 Spacer()
                 Button { model.dismissMessages() } label: { Image(systemName: "xmark") }
                     .buttonStyle(.plain)
-                    .help(text("message.dismiss"))
+                    .help(text("message.dismiss.help"))
+                    .accessibilityHint(text("message.dismiss.help"))
                     .accessibilityLabel(text("message.dismiss"))
             }
         }

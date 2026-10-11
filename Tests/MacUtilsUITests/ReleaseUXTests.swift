@@ -33,12 +33,12 @@ final class ReleaseUXTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["No scripts yet"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["New script"].exists)
 
-        app.radioButtons["Help"].click()
+        app.descendants(matching: .any)["navigate-help"].click()
         XCTAssertTrue(app.staticTexts["How Mac Utils works"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["Switch between mirror and extended mode"].exists)
         XCTAssertTrue(app.staticTexts["Toggle by State: reads the current state and chooses Then when it matches, or Otherwise when it does not."].exists)
 
-        app.radioButtons["Shortcuts"].click()
+        app.descendants(matching: .any)["navigate-shortcuts"].click()
         XCTAssertTrue(app.staticTexts["Create a script first"].waitForExistence(timeout: 3))
     }
 
@@ -48,7 +48,7 @@ final class ReleaseUXTests: XCTestCase {
         try writeEmptyConfiguration(to: configurationURL)
         let app = launch(language: "english", onboarding: false, configurationURL: configurationURL)
 
-        app.radioButtons["General"].click()
+        app.descendants(matching: .any)["navigate-general"].click()
 
         XCTAssertTrue(app.staticTexts["General"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.descendants(matching: .any)["launch-at-login-toggle"].exists)
@@ -61,7 +61,7 @@ final class ReleaseUXTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: configurationURL) }
         try writeConfigurationWithTwoBindings(to: configurationURL)
         let app = launch(language: "english", onboarding: false, configurationURL: configurationURL)
-        app.radioButtons["Shortcuts"].click()
+        app.descendants(matching: .any)["navigate-shortcuts"].click()
         XCTAssertTrue(app.staticTexts["⌥⌘K"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["⌥⌘E"].exists)
 

@@ -625,12 +625,15 @@ func applicationMenuProvidesStandardWindowAndQuitShortcuts() throws {
     let copy = try #require(items.first(where: { $0.keyEquivalent == "c" }))
     let paste = try #require(items.first(where: { $0.keyEquivalent == "v" }))
     let selectAll = try #require(items.first(where: { $0.keyEquivalent == "a" }))
+    let fullScreen = try #require(items.first(where: { $0.keyEquivalent == "f" }))
     #expect(close.action == #selector(NSWindow.performClose(_:)))
     #expect(minimize.action == #selector(NSWindow.performMiniaturize(_:)))
     #expect(quit.action == #selector(NSApplication.terminate(_:)))
     #expect(copy.action == #selector(NSText.copy(_:)))
     #expect(paste.action == #selector(NSText.paste(_:)))
     #expect(selectAll.action == #selector(NSText.selectAll(_:)))
+    #expect(fullScreen.action == #selector(NSWindow.toggleFullScreen(_:)))
+    #expect(fullScreen.keyEquivalentModifierMask == [.control, .command])
 }
 
 private func formatSpecifiers(in value: String) -> [String] {
@@ -748,6 +751,37 @@ func diagnosticAndUITestLaunchArgumentsAreParsedWithoutAProductionCodePath() thr
     #expect(options.onboardingOverride == false)
     #expect(options.initialSettingsTab == .help)
     #expect(options.usesScreenshotFixture)
+
+    let progressArguments = ["Mac Utils", "--storage-capture-progress",
+                             "--capture-ui", "/tmp/storage-progress.png", "--storage-root", "/"]
+    let progressOptions = AppLaunchOptions(arguments: progressArguments)
+    #expect(progressOptions.capturesStorageProgress)
+    #expect(progressOptions.opensSettings)
+    #expect(progressOptions.captureURL == URL(fileURLWithPath: "/tmp/storage-progress.png"))
+    #expect(progressOptions.storageRootURL == URL(fileURLWithPath: "/"))
+    #expect(!options.capturesStorageProgress)
+    #expect(!AppLaunchOptions(arguments: ["Mac Utils", "--storage-capture-progress",
+                                        "--storage-root", "/"]).capturesStorageProgress)
+    #expect(!AppLaunchOptions(arguments: ["Mac Utils", "--storage-capture-progress",
+                                        "--capture-ui", "/tmp/storage-progress.png"]).capturesStorageProgress)
+    #expect(AppLaunchOptions(arguments: ["Mac Utils", "--window-height", "720"]).windowHeight == 720)
+    #expect(AppLaunchOptions(arguments: ["Mac Utils", "--window-height", "680"]).windowHeight == nil)
+
+    let confirmationArguments = ["Mac Utils", "--storage-show-trash-confirmation",
+                                 "--screenshot-fixture", "--storage-root", "/tmp/storage-fixture",
+                                 "--capture-ui", "/tmp/storage-confirmation.png"]
+    let confirmationOptions = AppLaunchOptions(arguments: confirmationArguments)
+    #expect(confirmationOptions.showsStorageTrashConfirmation)
+    #expect(confirmationOptions.opensSettings)
+    #expect(!options.showsStorageTrashConfirmation)
+    #expect(!AppLaunchOptions(arguments: confirmationArguments.filter { $0 != "--screenshot-fixture" })
+        .showsStorageTrashConfirmation)
+    #expect(!AppLaunchOptions(arguments: ["Mac Utils", "--storage-show-trash-confirmation",
+                                        "--screenshot-fixture", "--capture-ui", "/tmp/storage-confirmation.png"])
+        .showsStorageTrashConfirmation)
+    #expect(!AppLaunchOptions(arguments: ["Mac Utils", "--storage-show-trash-confirmation",
+                                        "--screenshot-fixture", "--storage-root", "/tmp/storage-fixture"])
+        .showsStorageTrashConfirmation)
 }
 
 @Test
