@@ -6,7 +6,7 @@
 - `source/report.md` — English entry with layout, theme, tokens, and metadata;
 - `source/report.ru.md` — Russian variant with the same structure; the built page picks the initial
   language from the browser and offers a language selector;
-- `source/assets/` — local captures (`builder-*.webp`, `shortcuts-*.webp`), `app-icon.png`, `og-image.png`;
+- `source/assets/` — local captures (`builder-*.webp`, `shortcuts-*.webp`, `storage-*.webp`), `app-icon.png`, `og-image.png`;
 - `source/fixtures/` — screenshot-fixture configurations used to capture the landing screenshots;
 - `dist/` — generated output served by nginx. Never edit it by hand.
 
@@ -28,6 +28,16 @@ To refresh the captures, build the Direct Debug app, then run it with `--screens
 --configuration-file website/source/fixtures/landing-<en|ru>.json --settings-tab <scripts|shortcuts>
 --capture-ui <png>` and convert the PNG with `cwebp -q 82`; the Shortcuts capture is cropped to its top
 760 pixels.
+
+The storage captures show the installed Direct 1.3.0 (11) app analyzing disposable demo files, not a
+whole disk. Use an isolated configuration file under `agent_temp_files_local/` with
+`--screenshot-fixture --configuration-file <isolated-file> --storage-root <own-demo-folder>
+--storage-refresh --storage-metric logical --storage-expand Downloads --storage-select Downloads
+--settings-tab storage --open-settings --skip-onboarding --ui-language <english|russian>
+--window-width 1280 --window-height 800 --capture-ui <png>`, then `cwebp -q 82`. The public captures use
+`/tmp/Mac Utils Demo Disk` to avoid exposing account names or real folder paths; its six files are
+generated solely for the capture and removed afterward. No Trash operation is run while capturing.
+The screenshot-fixture configuration also isolates saved grants and scan caches from the normal app.
 
 Whenever the shipped feature set or a user-facing workflow changes, update the landing in the same product
 change: keep both language variants equivalent, regenerate captures when the affected interface is visible

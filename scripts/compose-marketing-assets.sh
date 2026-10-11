@@ -31,13 +31,13 @@ compose_screenshot() {
 
 compose_screenshot en 01-builder "Build display workflows visually" "Add actions and state-based branches with the mouse."
 compose_screenshot en 02-shortcuts "One shortcut. Any workflow." "Assign and safely edit global keyboard shortcuts."
-compose_screenshot en 03-help "Learn every feature in the app" "Built-in guidance for display modes and universal toggles."
+compose_screenshot en 03-help "Learn every feature in the app" "Built-in guidance for storage, scripts and display modes."
 compose_screenshot en 04-onboarding "Ready in minutes" "Choose a language and create your first workflow."
 compose_screenshot en 05-general "Ready when you sign in" "Control automatic launch and see the live macOS status."
 
 compose_screenshot ru 01-builder "Собирайте сценарии мышкой" "Добавляйте действия и ветвления по состоянию дисплея."
 compose_screenshot ru 02-shortcuts "Одна клавиша. Любой сценарий." "Назначайте и безопасно изменяйте глобальные сочетания."
-compose_screenshot ru 03-help "Все функции понятны сразу" "Встроенная справка о режимах дисплея и переключателях."
+compose_screenshot ru 03-help "Справка прямо в приложении" "Хранилище, сценарии и режимы дисплеев."
 compose_screenshot ru 04-onboarding "Начните за несколько минут" "Выберите язык и создайте первый сценарий."
 compose_screenshot ru 05-general "Готово после входа" "Управляйте автозапуском и проверяйте состояние macOS."
 

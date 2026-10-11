@@ -1,1 +1,1 @@
-Build a script from ready-made actions once, then run it from any app with one global keyboard shortcut.
+Explore a saved storage tree, review large folders and move chosen items to Trash. Build display scripts and run them with a global shortcut.

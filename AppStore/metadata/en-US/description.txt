@@ -1,10 +1,19 @@
-Mac Utils is a menu bar app that turns ready-made actions into scripts and runs each script with one global keyboard shortcut.
+Mac Utils combines storage analysis and reusable scripts in a native utility window, available from the menu bar.
+
+Understand your storage
+Choose a disk or folder through macOS, then explore a saved folder tree sorted by logical or allocated size. Expand folders, load more items, or focus a branch without rescanning. A largest-items list and optional size map help you find what to review.
+
+Clean up by hand
+Reveal items in Finder or move selected files and whole folders to the system Trash after reviewing their paths. A folder moves with all its contents. Successful moves update the saved tree without restarting analysis; restoration and emptying Trash remain Finder operations. Buttons include explanations, and shortcuts open macOS Storage settings, Downloads and Trash.
+
+Access and measurements
+The sandboxed app needs a native disk or folder selection grant. macOS can restrict protected data; analysis displays coverage warnings and reported errors. Catalog progress is approximate when an object-count estimate is available. APFS shared blocks mean allocated totals are not exclusive or reclaimable space. Refresh explicitly to measure unrelated changes.
 
 Build without code
 Create scripts in a visual editor. Add actions, arrange them in order, and set the typed parameters each action needs. An optional data-only text editor shows the same script; it never runs shell commands or downloaded code.
 
 React to live state
-Toggle by State reads the current value every time the shortcut is pressed and chooses the matching branch. One key can extend a mirrored display and mirror it again later, following the real layout instead of remembered state.
+Toggle by State reads the current value every time the shortcut is pressed and chooses the matching branch. One key can extend a mirrored display and mirror it again later. Independent display preferences retain supported modes and relative positions, including portrait displays, when switching between mirroring and extension.
 
 Run from anywhere
 Assign a global keyboard shortcut to any saved script. A script can contain one action or a sequence, and an existing shortcut keeps working if a replacement cannot be registered.
@@ -21,6 +30,6 @@ Actions in this version
 The action catalog grows with each release.
 
 Private by design
-Mac Utils has no account, analytics, advertising, or cloud service. Scripts and shortcut settings stay in the app’s local container.
+Mac Utils has no account, analytics, advertising, or cloud service. Scripts, shortcuts, saved analysis and diagnostics stay locally. Nothing is uploaded automatically.
 
 Available in English and Russian. Requires macOS 26 or later.

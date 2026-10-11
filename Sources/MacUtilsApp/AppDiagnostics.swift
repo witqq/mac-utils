@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Foundation
 import MacUtilsCore
 import MacUtilsSystem
@@ -10,6 +11,8 @@ enum DiagnosticRequest: Equatable {
     case sandboxEnvironment
     case appSmoke
     case displayProbe
+    case displayWatch
+    case displayRoundTrip
     case hotKeyManual
 
     static func parse(_ arguments: [String]) throws -> DiagnosticRequest? {
@@ -39,6 +42,8 @@ enum DiagnosticRequest: Equatable {
         }
         if arguments.contains("--sandbox-environment-smoke") { return .sandboxEnvironment }
         if arguments.contains("--smoke-test") { return .appSmoke }
+        if arguments.contains("--display-watch") { return .displayWatch }
+        if arguments.contains("--display-roundtrip") { return .displayRoundTrip }
         if arguments.contains("--display-probe") { return .displayProbe }
         if arguments.contains("--hotkey-manual-smoke-test") { return .hotKeyManual }
         return nil
@@ -56,6 +61,8 @@ enum DiagnosticError: Error, Equatable, CustomStringConvertible {
     case invalidDisplayAction
     case missingValue(String)
     case configurationRoundTripFailed
+    case displayRoundTripUnavailable
+    case displayRoundTripMismatch(String)
 
     var description: String {
         switch self {
@@ -65,6 +72,10 @@ enum DiagnosticError: Error, Equatable, CustomStringConvertible {
             "Option \(flag) requires a value."
         case .configurationRoundTripFailed:
             "The configuration written by the smoke check could not be loaded."
+        case .displayRoundTripUnavailable:
+            "Display round-trip requires exactly two active, independent displays. It performs no changes otherwise."
+        case let .displayRoundTripMismatch(message):
+            "Display round-trip did not restore the starting state: \(message)"
         }
     }
 }
@@ -72,6 +83,7 @@ enum DiagnosticError: Error, Equatable, CustomStringConvertible {
 @MainActor
 final class AppDiagnostics {
     private var shortcutCoordinator: ShortcutCoordinator?
+    private var displayChangeSubscription: AnyCancellable?
 
     func runIfRequested(arguments: [String], statusItemCreated: Bool) -> Bool {
         let request: DiagnosticRequest
@@ -96,6 +108,8 @@ final class AppDiagnostics {
             )
             terminate()
         case .displayProbe: runDisplayProbe()
+        case .displayWatch: runDisplayWatch()
+        case .displayRoundTrip: runDisplayRoundTrip()
         case .hotKeyManual: runHotKeySmoke()
         }
         return true
@@ -130,22 +144,112 @@ final class AppDiagnostics {
 
     private func runDisplayProbe() {
         Task {
-            do {
-                let displays = try await DisplayController().displays()
-                print("displayCount=\(displays.count)")
-                for display in displays {
-                    print(
-                        "display id=\(display.id.rawValue) name=\(display.name) "
-                            + "active=\(display.isActive) role=\(display.role) "
-                            + "frame=\(display.frame.x),\(display.frame.y),"
-                            + "\(display.frame.width)x\(display.frame.height)"
-                    )
+            await captureDisplaySnapshot(using: DisplayController(), reason: "probe")
+            terminate()
+        }
+    }
+
+    /// Observes native changes without performing any reconfiguration or imposing a guessed delay.
+    private func runDisplayWatch() {
+        let manager = DisplayController()
+        displayChangeSubscription = NotificationCenter.default
+            .publisher(for: NSApplication.didChangeScreenParametersNotification)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.captureDisplaySnapshot(using: manager, reason: "screen-parameters-changed")
                 }
+            }
+        print("displayWatch=read-only; stop this process to finish")
+        Task { await captureDisplaySnapshot(using: manager, reason: "watch-started") }
+    }
+
+    private func captureDisplaySnapshot(using manager: DisplayController, reason: String) async {
+        do {
+            let displays = try await manager.displays()
+            DisplayDiagnostics.shared.record("diagnostic.snapshot", displays: displays, details: [
+                "reason": reason,
+                "os": ProcessInfo.processInfo.operatingSystemVersionString,
+                "appVersion": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "development",
+                "appBuild": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "development",
+            ])
+            print("displayCount=\(displays.count) diagnosticLog=\(DisplayDiagnostics.shared.fileURL.path)")
+            for display in displays {
+                let mode = display.mode.map {
+                    "\($0.width)x\($0.height) pixels=\($0.pixelWidth)x\($0.pixelHeight) hz=\($0.refreshRate) modeID=\($0.ioModeID)"
+                } ?? "unavailable"
+                print(
+                    "display id=\(display.id.rawValue) name=\(display.name) "
+                        + "active=\(display.isActive) role=\(display.role) "
+                        + "frame=\(display.frame.x),\(display.frame.y),\(display.frame.width)x\(display.frame.height) "
+                        + "rotation=\(display.rotation.map(String.init(describing:)) ?? "unavailable") "
+                        + "mirrorSet=\(display.isInMirrorSet.map(String.init(describing:)) ?? "unavailable") mode=\(mode)"
+                )
+            }
+        } catch {
+            DisplayDiagnostics.shared.record("diagnostic.failed", details: ["reason": reason, "error": String(describing: error)])
+            writeError("Display probe failed: \(error)")
+        }
+    }
+
+    /// Explicit diagnostic command: one connection, both mirror directions, original main restored.
+    private func runDisplayRoundTrip() {
+        let manager = DisplayController()
+        Task {
+            do {
+                let baseline = try await manager.displays()
+                guard baseline.count == 2, baseline.allSatisfy({ $0.isActive && $0.isInMirrorSet != true }),
+                      let main = baseline.first(where: { $0.role == .main }),
+                      let other = baseline.first(where: { $0.role == .extended }) else {
+                    throw DiagnosticError.displayRoundTripUnavailable
+                }
+                await captureDisplaySnapshot(using: manager, reason: "roundtrip-start")
+                print("displayRoundTrip=running; desktop reconfigures briefly in both mirror directions")
+                var transitionError: (any Error)?
+                do {
+                    try await manager.setMirrorDisplay(main.id, source: other.id)
+                    try await manager.setExtendedDisplay(main.id)
+                    try await manager.setMainDisplay(main.id)
+                    try await manager.setMirrorDisplay(other.id, source: main.id)
+                    try await manager.setExtendedDisplay(other.id)
+                } catch { transitionError = error }
+                // Attempt recovery even when a transition fails; report recovery failure separately.
+                do {
+                    let current = try await manager.displays()
+                    for display in current {
+                        if case .mirror = display.role { try await manager.setExtendedDisplay(display.id) }
+                    }
+                    try await manager.setMainDisplay(main.id)
+                } catch {
+                    DisplayDiagnostics.shared.record("diagnostic.restore-failed", details: ["error": String(describing: error)])
+                    writeError("Could not restore original display roles: \(error). Use macOS Displays settings.")
+                }
+                await captureDisplaySnapshot(using: manager, reason: "roundtrip-finished")
+                if let transitionError { throw transitionError }
+                let actual = try await manager.displays()
+                for expected in baseline {
+                    guard let display = actual.first(where: { $0.id == expected.id }),
+                          display.frame == expected.frame, display.role == expected.role,
+                          display.rotation == expected.rotation,
+                          sameMode(display.mode, expected.mode) else {
+                        throw DiagnosticError.displayRoundTripMismatch(expected.id.rawValue)
+                    }
+                }
+                print("displayRoundTripPassed=true originalLayoutAndModesRestored=true")
             } catch {
-                writeError("Display probe failed: \(error)")
+                DisplayDiagnostics.shared.record("diagnostic.roundtrip-failed", details: ["error": String(describing: error)])
+                writeError("Display round-trip failed: \(error)")
+                terminate(exitCode: 1)
+                return
             }
             terminate()
         }
+    }
+
+    private func sameMode(_ left: DisplayMode?, _ right: DisplayMode?) -> Bool {
+        guard let left, let right else { return left == nil && right == nil }
+        return left.width == right.width && left.height == right.height
+            && left.pixelWidth == right.pixelWidth && left.pixelHeight == right.pixelHeight
+            && abs(left.refreshRate - right.refreshRate) < 0.01
     }
 
     private func runDisplayAction(_ name: String, parameters: [String]) {
@@ -279,7 +383,8 @@ final class AppDiagnostics {
         try? FileHandle.standardError.write(contentsOf: Data("\(message)\n".utf8))
     }
 
-    private func terminate() {
+    private func terminate(exitCode: Int32 = 0) {
+        if exitCode != 0 { exit(exitCode) }
         NSApplication.shared.terminate(nil)
     }
 }

@@ -2,6 +2,25 @@
 
 All notable public changes to Mac Utils are recorded here.
 
+## 1.3.0 — 2026-10-12
+
+### Added
+
+- Disk and folder analysis with native APFS catalog scanning where supported, explicit coverage warnings and phase/count/time progress.
+- A persistent folder tree with paginated children, size sorting, largest items and an optional size map; browsing uses saved metadata without rescanning.
+- Confirmed manual moves of files and whole folders to the system Trash, with saved-tree updates that preserve browsing state. Cache failures protect historical results from further moves until Refresh.
+- Explanations beside storage management actions and in control tooltips, with native links to macOS Storage, Downloads, Trash and disk-access settings.
+- A shared sidebar, resizable utility window and native full-screen mode.
+- Bounded local storage/display diagnostics and independent display history.
+
+### Fixed
+
+- Mirror/extend switching restores remembered supported modes and relative display positions, including portrait displays and changes of the main display.
+- Confirmed catalog conflicts between different file identities at one verified path retain the first historical row and size once, omit the new contribution and mark coverage incomplete. Refresh is needed for current sizes, and cleanup refuses the replaced identity. Root, parent, directory and same-identity contradictions still stop analysis.
+- Moving a folder to Trash no longer clears the entire analysis or triggers a source scan.
+
+See [v1.3.0 release notes](docs/releases/v1.3.0.md).
+
 ## 1.2.1 — 2026-09-14
 
 ### Fixed

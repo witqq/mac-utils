@@ -91,6 +91,8 @@ private struct ScenarioBranchView: View {
                     .frame(maxHeight: 150)
                     .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 7))
                 }
+                .help(text("builder.dslPreview.help"))
+                .accessibilityHint(text("builder.dslPreview.help"))
             }
         }
     }
@@ -103,6 +105,8 @@ private struct ScenarioBranchView: View {
                         do { try builder.addAction(action.id, to: location) }
                         catch { model.reportEditorError(error) }
                     }
+                    .help(text.actionDescription(action))
+                    .accessibilityHint(text.actionDescription(action))
                 }
             }
             Section(text("builder.toggleByState")) {
@@ -111,6 +115,8 @@ private struct ScenarioBranchView: View {
                         do { try builder.addToggle(provider.id, to: location) }
                         catch { model.reportEditorError(error) }
                     }
+                    .help(text.providerDescription(provider))
+                    .accessibilityHint(text.providerDescription(provider))
                 }
             }
         } label: {
@@ -119,6 +125,7 @@ private struct ScenarioBranchView: View {
         .menuStyle(.borderlessButton)
         .fixedSize()
         .help(text("builder.addStep.help"))
+        .accessibilityHint(text("builder.addStep.help"))
     }
 
     @ViewBuilder
@@ -265,6 +272,9 @@ private struct ToggleStepCard: View {
                             }
                         }
                         .labelsHidden()
+                        .help(text("builder.whenState.help"))
+                        .accessibilityLabel(text("builder.whenState"))
+                        .accessibilityHint(text("builder.whenState.help"))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
@@ -354,20 +364,26 @@ private struct StepHeader: View {
             Spacer(minLength: 12)
             HStack(spacing: 4) {
                 Button(action: moveUp) { Image(systemName: "arrow.up") }
-                    .disabled(!canMoveUp).help(text("builder.moveUp")).accessibilityLabel(text("builder.moveUp"))
+                    .disabled(!canMoveUp).help(text("builder.moveUp.help"))
+                    .accessibilityHint(text("builder.moveUp.help")).accessibilityLabel(text("builder.moveUp"))
                 Button(action: moveDown) { Image(systemName: "arrow.down") }
-                    .disabled(!canMoveDown).help(text("builder.moveDown")).accessibilityLabel(text("builder.moveDown"))
+                    .disabled(!canMoveDown).help(text("builder.moveDown.help"))
+                    .accessibilityHint(text("builder.moveDown.help")).accessibilityLabel(text("builder.moveDown"))
                 Button(action: duplicate) { Image(systemName: "plus.square.on.square") }
-                    .help(text("builder.duplicate")).accessibilityLabel(text("builder.duplicate"))
+                    .help(text("builder.duplicate.help"))
+                    .accessibilityHint(text("builder.duplicate.help")).accessibilityLabel(text("builder.duplicate"))
                 Button(role: .destructive) { confirmsDeletion = true } label: { Image(systemName: "trash") }
-                    .help(text("builder.delete")).accessibilityLabel(text("builder.delete"))
+                    .help(text("builder.delete.help"))
+                    .accessibilityHint(text("builder.delete.help")).accessibilityLabel(text("builder.delete"))
             }
             .buttonStyle(.borderless)
             .fixedSize()
         }
         .confirmationDialog(text("builder.delete.title"), isPresented: $confirmsDeletion, titleVisibility: .visible) {
             Button(text("common.delete"), role: .destructive, action: remove)
+                .help(text("builder.delete.help")).accessibilityHint(text("builder.delete.help"))
             Button(text("common.cancel"), role: .cancel) {}
+                .help(text("common.cancel.help")).accessibilityHint(text("common.cancel.help"))
         } message: {
             Text(text("builder.delete.message"))
         }
@@ -398,6 +414,9 @@ private struct ParameterEditor: View {
                 .frame(width: 112, alignment: .trailing)
             editor
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .help(text.parameterHelp(ownerID: ownerID, parameter: parameter))
+                .accessibilityLabel(label)
+                .accessibilityHint(text.parameterHelp(ownerID: ownerID, parameter: parameter))
         }
         .help(text.parameterHelp(ownerID: ownerID, parameter: parameter))
     }

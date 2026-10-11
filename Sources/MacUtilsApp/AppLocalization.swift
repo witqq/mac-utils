@@ -130,6 +130,21 @@ struct AppText: Sendable {
 
     func error(_ error: any Error) -> String {
         switch error {
+        case let error as StorageScannerError:
+            switch error {
+            case .rootNotDirectory: self("storage.error.root")
+            case let .sizeOverflow(path): format("storage.error.overflow", path)
+            }
+        case let error as StorageServiceError:
+            switch error {
+            case let .access(message): format("storage.error.access", message)
+            case let .staleItem(message): format("storage.error.stale", message)
+            case let .unsafeItem(message): format("storage.error.unsafe", message)
+            case let .invalidData(message): format("storage.error.data", message)
+            case .treeUnavailable: self("storage.error.treeUnavailable")
+            }
+        case let error as StorageTreeIndexError:
+            format("storage.error.data", error.description)
         case let error as ShortcutCoordinatorError:
             switch error {
             case let .scriptNotFound(id): format("error.shortcut.scriptMissing", id.uuidString)
@@ -194,6 +209,24 @@ struct AppText: Sendable {
         #endif
         default:
             format("error.generic", String(describing: error))
+        }
+    }
+
+    func storageErrorSummary(_ error: any Error) -> String {
+        switch error {
+        case let error as StorageServiceError:
+            switch error {
+            case .access: self("storage.error.accessSummary")
+            case .staleItem: self("storage.error.staleSummary")
+            case .unsafeItem: self("storage.error.unsafeSummary")
+            case .invalidData: self("storage.error.dataSummary")
+            case .treeUnavailable: self("storage.error.treeUnavailable")
+            }
+        case is StorageScannerError: self.error(error)
+        case is StorageTreeIndexError: self("storage.error.treeCache")
+        case let error as POSIXError where error.code == .EACCES || error.code == .EPERM:
+            self("storage.error.accessSummary")
+        default: self("storage.error.genericSummary")
         }
     }
 

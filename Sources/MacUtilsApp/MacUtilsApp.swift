@@ -1,16 +1,20 @@
 import AppKit
+import Combine
 import Foundation
 import MacUtilsCore
 import MacUtilsSystem
 import SwiftUI
 
 @MainActor
-private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
+private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     private var shortcutCoordinator: ShortcutCoordinator?
     private var diagnostics: AppDiagnostics?
     private var model: AppModel?
     private var settingsWindow: NSWindow?
+    private var utilityNavigation: UtilityNavigation?
+    private var storageModel: StorageModel?
+    private var menuLanguageSubscription: AnyCancellable?
     private let popover = NSPopover()
 
     private var launchText: AppText {
@@ -43,7 +47,9 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
             systemSymbolName: "rectangle.on.rectangle",
             accessibilityDescription: SystemEnvironment.productName
         )
-        item.button?.toolTip = SystemEnvironment.productName
+        item.button?.toolTip = launchText("menu.status.help")
+        item.button?.setAccessibilityLabel(SystemEnvironment.productName)
+        item.button?.setAccessibilityHelp(launchText("menu.status.help"))
         item.button?.target = self
         item.button?.action = #selector(togglePopover(_:))
         statusItem = item
@@ -94,8 +100,18 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
             )
             shortcutCoordinator = coordinator
             self.model = model
+            menuLanguageSubscription = model.$language.removeDuplicates().sink { [weak self] language in
+                Task { @MainActor in
+                    let text = AppText(language: language)
+                    NSApplication.shared.mainMenu = ApplicationMenuFactory.make(text: text)
+                    self?.statusItem?.button?.toolTip = text("menu.status.help")
+                    self?.statusItem?.button?.setAccessibilityHelp(text("menu.status.help"))
+                }
+            }
             popover.contentViewController = MenuBarPopover.contentController(
-                for: MenuBarRootView(model: model) { [weak self] in self?.showSettings() }
+                for: MenuBarRootView(model: model,
+                    onOpenSettings: { [weak self] in self?.showSettings() },
+                    onOpenStorage: { [weak self] in self?.showSettings(tab: .storage) })
             )
             Task {
                 await model.start()
@@ -110,10 +126,61 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
 
     private func runUIHooks(options: AppLaunchOptions, model: AppModel) async {
         if options.opensSettings {
-            showSettings()
+            showSettings(tab: options.capturesStorageProgress || options.showsStorageTrashConfirmation
+                || options.storageInformationSheet != nil ? .storage : nil)
+            if let root = options.storageRootURL, let storage = storageModel {
+                storage.text = model.text
+                await storage.start()
+                await storage.selectFolder(root)
+                if !storage.isScanning && (options.refreshesStorage
+                    || (options.capturesStorageProgress && storage.error == nil)) {
+                    storage.refresh()
+                }
+                if options.capturesStorageProgress, let captureURL = options.captureURL {
+                    // Completion/failure is also observed so a short or failed scan cannot leave
+                    // this diagnostic waiting forever for a nonzero progress update.
+                    for await (progress, scanning) in storage.$progress.combineLatest(storage.$isScanning).values {
+                        if !scanning || (progress?.visitedItems ?? 0) > 0 { break }
+                    }
+                    do { try await Task.sleep(for: .seconds(1)) }
+                    catch { storage.cancelScan(); return }
+                    print("storageCaptureWhileScanning=\(storage.isScanning)")
+                    captureSettings(to: captureURL)
+                    storage.cancelScan()
+                    settingsWindow?.attachedSheet?.orderOut(nil)
+                    settingsWindow?.close()
+                    NSApplication.shared.terminate(nil)
+                    return
+                }
+                await storage.waitForScan()
+                if let metric = options.storageMetric { storage.metric = metric }
+                if let path = options.storageExpansionPath { _ = await storage.expand(relativePath: path) }
+                if let path = options.storageFolderPath { await storage.focus(relativePath: path) }
+                if let mode = options.storageBrowser { storage.browserMode = mode }
+                if let path = options.storageSelectionPath { await storage.select(relativePath: path) }
+                await storage.waitForScan()
+                if options.captureURL != nil {
+                    print("storageCaptureTree schema=\(storage.snapshot?.schemaVersion ?? 0) "
+                        + "indexedNodes=\(storage.snapshot?.tree?.nodeCount ?? 0) "
+                        + "folderID=\(storage.folderID) selected=\(storage.selection.count)")
+                }
+                if options.showsStorageTrashConfirmation {
+                    storage.requestTrashConfirmation()
+                }
+            }
+            if let information = options.storageInformationSheet, let storage = storageModel {
+                await storage.start()
+                storage.informationSheet = information
+            }
             if let captureURL = options.captureURL {
                 do { try await Task.sleep(for: .seconds(1)) }
                 catch { return }
+                if options.showsStorageTrashConfirmation {
+                    print("storageConfirmationPresented=\(settingsWindow?.attachedSheet != nil)")
+                }
+                if let information = options.storageInformationSheet {
+                    print("storageInformationSheet=\(information.rawValue) presented=\(settingsWindow?.attachedSheet != nil)")
+                }
                 captureSettings(to: captureURL)
                 settingsWindow?.attachedSheet?.orderOut(nil)
                 settingsWindow?.close()
@@ -138,35 +205,65 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func showSettings() {
+    private func showSettings(tab: SettingsTab? = nil) {
         guard let model else { return }
         popover.performClose(nil)
         if let settingsWindow {
+            if let tab { utilityNavigation?.selectedTab = tab }
+            Task { [weak self] in await self?.storageModel?.start() }
             settingsWindow.makeKeyAndOrderFront(nil)
             NSApplication.shared.activate()
             return
         }
 
         let options = AppLaunchOptions(arguments: CommandLine.arguments)
+        let navigation = UtilityNavigation(selectedTab: tab ?? options.initialSettingsTab)
+        let storageService = if options.usesScreenshotFixture, let configuration = options.configurationURL {
+            StorageService(grantsURL: configuration.deletingLastPathComponent().appending(path: "storage-grants.json"),
+                cacheURL: configuration.deletingLastPathComponent().appending(path: "storage-snapshots.json"))
+        } else { StorageService() }
+        let storage = StorageModel(service: storageService)
+        utilityNavigation = navigation
+        storageModel = storage
         let controller = NSHostingController(
             rootView: SettingsView(
                 model: model,
                 onboardingOverride: options.onboardingOverride,
-                initialTab: options.initialSettingsTab
+                initialTab: options.initialSettingsTab,
+                navigation: navigation,
+                storage: storage
             )
         )
         let window = NSWindow(contentViewController: controller)
         window.title = model.text("app.settings.title")
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
-        window.setContentSize(NSSize(width: 1_000, height: 720))
+        window.collectionBehavior.insert(.fullScreenPrimary)
+        window.contentMinSize = UtilityWindowSize.minimum
+        window.setContentSize(NSSize(
+            width: max(UtilityWindowSize.minimum.width, options.windowWidth ?? UtilityWindowSize.defaultSize.width),
+            height: max(UtilityWindowSize.minimum.height, options.windowHeight ?? UtilityWindowSize.defaultSize.height)
+        ))
         window.center()
         window.isReleasedWhenClosed = false
+        window.delegate = self
         settingsWindow = window
         window.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate()
     }
 
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow, window === settingsWindow else { return }
+        storageModel?.stop()
+    }
+
     private func captureSettings(to url: URL) {
+        if let window = settingsWindow?.attachedSheet ?? settingsWindow,
+           let view = window.contentView {
+            view.layoutSubtreeIfNeeded()
+            print("uiCaptureGeometry contentLayoutRect=\(window.contentLayoutRect) "
+                + "contentViewBounds=\(view.bounds) fittingSize=\(view.fittingSize) "
+                + "safeAreaInsets=\(view.safeAreaInsets)")
+        }
         guard let window = settingsWindow?.attachedSheet ?? settingsWindow,
               let view = window.contentView,
               let representation = NSBitmapImageRep(
@@ -185,6 +282,8 @@ private final class MacUtilsAppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         representation.size = view.bounds.size
+        view.layoutSubtreeIfNeeded()
+        view.displayIfNeeded()
         view.wantsLayer = true
         view.layer?.backgroundColor = window.backgroundColor.cgColor
         view.cacheDisplay(in: view.bounds, to: representation)
@@ -299,8 +398,27 @@ enum ApplicationMenuFactory {
             action: #selector(NSWindow.performZoom(_:)),
             keyEquivalent: ""
         ))
+        let fullScreenItem = NSMenuItem(title: text("menu.fullscreen"),
+            action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
+        fullScreenItem.keyEquivalentModifierMask = [.control, .command]
+        windowMenu.addItem(fullScreenItem)
         windowItem.submenu = windowMenu
         mainMenu.addItem(windowItem)
+
+        for (menu, keys) in [
+            (applicationMenu, ["menu.quit.help"]),
+            (editMenu, ["menu.undo.help", "menu.redo.help", "menu.cut.help",
+                        "menu.copy.help", "menu.paste.help", "menu.selectAll.help"]),
+            (windowMenu, ["menu.closeWindow.help", "menu.minimize.help",
+                          "menu.zoom.help", "menu.fullscreen.help"]),
+        ] {
+            for (item, key) in zip(menu.items.filter { !$0.isSeparatorItem }, keys) {
+                item.toolTip = text(key)
+            }
+        }
+        applicationItem.toolTip = text("menu.application.help")
+        editItem.toolTip = text("menu.edit.help")
+        windowItem.toolTip = text("menu.window.help")
 
         return mainMenu
     }
@@ -315,13 +433,24 @@ struct AppLaunchOptions: Equatable {
     let onboardingOverride: Bool?
     let initialSettingsTab: SettingsTab
     let usesScreenshotFixture: Bool
+    let storageRootURL: URL?
+    let windowWidth: Double?
+    let windowHeight: Double?
+    let refreshesStorage: Bool
+    let storageMetric: StorageSizeMetric?
+    let storageBrowser: StorageBrowserMode?
+    let storageFolderPath: String?
+    let storageExpansionPath: String?
+    let storageSelectionPath: String?
+    let capturesStorageProgress: Bool
+    let showsStorageTrashConfirmation: Bool
+    let storageInformationSheet: StorageInformationSheet?
 
     init(arguments: [String]) {
         configurationURL = Self.value(after: "--configuration-file", in: arguments)
             .map(URL.init(fileURLWithPath:))
         initialLanguage = Self.value(after: "--ui-language", in: arguments)
             .flatMap(AppLanguage.init(rawValue:))
-        opensSettings = arguments.contains("--open-settings")
         captureURL = Self.value(after: "--capture-ui", in: arguments)
             .map(URL.init(fileURLWithPath:))
         runsUISmoke = arguments.contains("--ui-smoke-test")
@@ -335,6 +464,28 @@ struct AppLaunchOptions: Equatable {
         initialSettingsTab = Self.value(after: "--settings-tab", in: arguments)
             .flatMap(SettingsTab.init(rawValue:)) ?? .scripts
         usesScreenshotFixture = arguments.contains("--screenshot-fixture")
+        storageRootURL = Self.value(after: "--storage-root", in: arguments).map(URL.init(fileURLWithPath:))
+        capturesStorageProgress = arguments.contains("--storage-capture-progress")
+            && captureURL != nil && storageRootURL != nil
+        showsStorageTrashConfirmation = arguments.contains("--storage-show-trash-confirmation")
+            && usesScreenshotFixture && storageRootURL != nil && captureURL != nil
+        storageInformationSheet = if usesScreenshotFixture && captureURL != nil {
+            if arguments.contains("--storage-show-management") { .management }
+            else if arguments.contains("--storage-show-access") { .access }
+            else { nil }
+        } else { nil }
+        opensSettings = arguments.contains("--open-settings") || capturesStorageProgress
+            || showsStorageTrashConfirmation || storageInformationSheet != nil
+        windowWidth = Self.value(after: "--window-width", in: arguments).flatMap(Double.init)
+            .flatMap { $0.isFinite && $0 >= UtilityWindowSize.minimum.width && $0 <= UtilityWindowSize.maximum.width ? $0 : nil }
+        windowHeight = Self.value(after: "--window-height", in: arguments).flatMap(Double.init)
+            .flatMap { $0.isFinite && $0 >= UtilityWindowSize.minimum.height && $0 <= UtilityWindowSize.maximum.height ? $0 : nil }
+        refreshesStorage = arguments.contains("--storage-refresh")
+        storageMetric = Self.value(after: "--storage-metric", in: arguments).flatMap(StorageSizeMetric.init(rawValue:))
+        storageBrowser = Self.value(after: "--storage-browser", in: arguments).flatMap(StorageBrowserMode.init(rawValue:))
+        storageFolderPath = Self.value(after: "--storage-folder", in: arguments)
+        storageExpansionPath = Self.value(after: "--storage-expand", in: arguments)
+        storageSelectionPath = Self.value(after: "--storage-select", in: arguments)
     }
 
     private static func value(after flag: String, in arguments: [String]) -> String? {
